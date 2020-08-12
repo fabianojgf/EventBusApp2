@@ -10,7 +10,9 @@ import android.widget.Toast;
 
 import com.example.eventbusapp.R;
 
+import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
+import org.greenrobot.eventbus.Handle;
 import org.greenrobot.eventbus.HandleClass;
 
 //import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.EventBus;
@@ -30,32 +32,32 @@ public class SecondActivity extends AppCompatActivity {
 
         textViewResponse = findViewById(R.id.textViewResponse);
 
-        Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onCreate: register");
+        Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onCreate: ---");
     }
 
     @Override
     public void onStart() {
-        //EventBus.getDefault(this).register(this);
-        //Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStart: register");
         super.onStart();
+        EventBus.getDefault(this).registerHandler(this);
+        Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStart: registerHandler");
     }
 
     @Override
     public void onStop() {
-        //EventBus.getDefault(this).unregister(this);
-        //Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStop: unregister");
         super.onStop();
+        EventBus.getDefault(this).unregisterHandler(this);
+        Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStop: unregisterHandler");
     }
 
     @Override
     protected void onDestroy() {
-        // EventBus.getDefault(this).unregister(this);
-        Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onDestroy: unregister");
+        //EventBus.getDefault(this).unregisterHandler(this);
+        //Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onDestroy: unregisterHandler");
         super.onDestroy();
     }
 
-    //@Subscribe(threadMode = ThreadMode.MAIN)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent exceptionEvent) {
+    @Handle(threadMode = ExceptionalThreadMode.MAIN)
+    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->SecondActivity: onExceptionEvent");
         //textViewResponse.setText("FirstActivity->SecondActivity: onExceptionEvent");

@@ -15,15 +15,20 @@
  */
 package org.greenrobot.eventbus;
 
+import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.reflections.Reflections;
-
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
+
+import dalvik.system.DexFile;
+
+import static android.content.Context.ACTIVITY_SERVICE;
 
 /**
  * EventBus is a central publish/subscribe event system for Java and Android.
@@ -255,6 +264,25 @@ public class EventBus {
         synchronized (this) {
             for (HandlerMethod handlerMethod : handlerMethods) {
                 handle(handler, handlerMethod);
+            }
+
+            ThrowingThreadState throwingState = currentThrowingThreadState.get();
+            List<Object> eventQueue = throwingState.exceptionalEventQueue;
+
+            if (!throwingState.isThrowing) {
+                throwingState.isMainThread = isMainThread();
+                throwingState.isThrowing = true;
+                if (throwingState.canceled) {
+                    throw new EventBusException("Internal error. Abort state was not reset");
+                }
+                try {
+                    while (!eventQueue.isEmpty()) {
+                        throwsSingleExceptionalEvent(eventQueue.remove(0), throwingState);
+                    }
+                } finally {
+                    throwingState.isThrowing = false;
+                    throwingState.isMainThread = false;
+                }
             }
         }
     }
@@ -484,23 +512,55 @@ public class EventBus {
         }
     }
 
+    public static boolean isIntentAvailable(Context ctx, Intent intent) {
+        final PackageManager mgr = ctx.getPackageManager();
+        List<ResolveInfo> list =
+                mgr.queryIntentActivities(intent,
+                        PackageManager.MATCH_DEFAULT_ONLY);
+        return list.size() > 0;
+    }
+
     /** Posts the given exceptional event to the event bus. */
     public void throwsException(Object exceptionalEvent) {
+        /*
         if(context != null) {
             System.out.println("PACK-APP-CXT-EVENTBUS:" + context.getPackageName());
             Log.println(Log.VERBOSE, "EventBusTest", "PACK-APP-CXT-EVENTBUS:" + context.getPackageName());
             Toast.makeText(context, "PACK-APP-CXT-EVENTBUS:" + context.getPackageName(), Toast.LENGTH_LONG).show();
-
-            Reflections reflections = new Reflections(context.getPackageName());
-            for (Class<?> clazz : reflections.getTypesAnnotatedWith(HandleClass.class)) {
-                System.out.println(clazz.toString());
-            }
         }
+        */
+        synchronized (exceptionalEvent) {
+            try {
+                DexFile df = new DexFile(context.getPackageCodePath());
+                for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); ) {
+                    String s = iter.nextElement();
+                    if (s.contains(context.getPackageName())) {
+                        //System.out.println("ClasseDex: " + s);
 
-        ThrowingThreadState throwingState = currentThrowingThreadState.get();
-        List<Object> eventQueue = throwingState.exceptionalEventQueue;
-        eventQueue.add(exceptionalEvent);
+                        try {
+                            Class<?> classe = Class.forName(s);
+                            if (classe.isAnnotationPresent(HandleClass.class)) {
+                                System.out.println("@HandleClass: " + classe.getName());
 
+                                Intent intent = new Intent(context, classe);
+                                context.startActivity(intent);
+
+                                break;
+                            }
+                        } catch (ClassNotFoundException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+
+            ThrowingThreadState throwingState = currentThrowingThreadState.get();
+            List<Object> eventQueue = throwingState.exceptionalEventQueue;
+            eventQueue.add(exceptionalEvent);
+        }
+        /*
         if (!throwingState.isThrowing) {
             throwingState.isMainThread = isMainThread();
             throwingState.isThrowing = true;
@@ -516,6 +576,7 @@ public class EventBus {
                 throwingState.isMainThread = false;
             }
         }
+        */
     }
 
     /**

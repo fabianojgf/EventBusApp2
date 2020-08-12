@@ -15,8 +15,6 @@ dependencies {
     def incap = '0.2'
     compileOnly "net.ltgt.gradle.incap:incap:$incap"
     annotationProcessor "net.ltgt.gradle.incap:incap-processor:$incap"
-
-    implementation 'org.reflections:reflections:0.9.5-RC2'
 }
 
 sourceSets {
