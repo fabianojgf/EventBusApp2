@@ -15,15 +15,9 @@ import org.greenrobot.eventbus.ExceptionalThreadMode;
 import org.greenrobot.eventbus.Handle;
 import org.greenrobot.eventbus.HandleClass;
 
-//import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.EventBus;
-
 @HandleClass(threadMode = ExceptionalThreadMode.MAIN)
 public class SecondActivity extends AppCompatActivity {
     TextView textViewResponse;
-
-    static {
-        System.out.println("SecondActivity");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,22 +32,22 @@ public class SecondActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault(this).registerHandler(this);
         Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStart: registerHandler");
+        EventBus.getDefault(this).registerHandler(this);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        EventBus.getDefault(this).unregisterHandler(this);
         Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onStop: unregisterHandler");
+        EventBus.getDefault(this).unregisterHandler(this);
     }
 
     @Override
     protected void onDestroy() {
-        //EventBus.getDefault(this).unregisterHandler(this);
-        //Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onDestroy: unregisterHandler");
         super.onDestroy();
+        //Log.println(Log.VERBOSE, "EventBusTest", "SecondActivity: onDestroy: unregisterHandler");
+        //EventBus.getDefault(this).unregisterHandler(this);
     }
 
     @Handle(threadMode = ExceptionalThreadMode.MAIN)

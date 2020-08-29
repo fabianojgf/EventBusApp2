@@ -18,10 +18,6 @@ import org.greenrobot.eventbus.Handle;
 public class MainActivity extends AppCompatActivity {
     Button buttonIniciar;
 
-    static {
-        System.out.println("MainActivity");
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,33 +29,45 @@ public class MainActivity extends AppCompatActivity {
                 iniciar(v);
             }
         });
+
+        Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: onCreate: ---");
     }
 
     @Override
     public void onStart() {
-        EventBus.getDefault(this).registerHandler(this);
-        Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: registerHandler");
         super.onStart();
+        Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: registerHandler");
+        EventBus.getDefault(this).registerHandler(this);
     }
 
     @Override
     public void onStop() {
-        //EventBus.getDefault(this).unregister(this);
-        //Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: onStop: unregisterHandler");
         super.onStop();
+        //Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: onStop: unregisterHandler");
+        //EventBus.getDefault(this).unregister(this);
+
+        buttonIniciar.setText("Proxima");
     }
 
     @Override
     protected void onDestroy() {
-        EventBus.getDefault(this).unregisterHandler(this);
-        Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: onDestroy: unregisterHandler");
         super.onDestroy();
+        Log.println(Log.VERBOSE, "EventBusTest", "MainActivity: onDestroy: unregisterHandler");
+        EventBus.getDefault(this).unregisterHandler(this);
     }
 
     @Handle(threadMode = ExceptionalThreadMode.MAIN)
     public void onExceptionEvent(FirstActivity.ExceptionEvent exceptionEvent) {
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->MainActivity: onExceptionEvent");
         Toast.makeText(this, "[MA] Ocorreu uma Exceção!", Toast.LENGTH_SHORT).show();
+    }
+
+    @Handle(threadMode = ExceptionalThreadMode.MAIN)
+    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+        /* Do something */
+        Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->MainActivity: onExceptionEvent");
+        buttonIniciar.setText("FirstActivity->MainActivity: onExceptionEvent");
+        //Toast.makeText(this, "[FA/MA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
     }
 
     public void iniciar(View view) {
