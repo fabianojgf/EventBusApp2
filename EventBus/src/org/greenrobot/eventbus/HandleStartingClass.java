@@ -28,22 +28,8 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface Handle {
+@Target({ElementType.TYPE})
+public @interface HandleStartingClass {
     ExceptionalThreadMode threadMode() default ExceptionalThreadMode.THROWING;
-
-    ExceptionalActionMode actionMode() default ExceptionalActionMode.HANDLE;
-
-    /**
-     * If true, delivers the most recent sticky exceptional event (throwed with
-     * {@link EventBus#throwsSticky(Object)}) to this handler (if exceptional event available).
-     */
-    boolean sticky() default false;
-
-    /** Handler priority to influence the order of exceptional event delivery.
-     * Within the same delivery thread ({@link ExceptionalThreadMode}), higher priority handlers will receive exceptional events before
-     * others with a lower priority. The default priority is 0. Note: the priority does *NOT* affect the order of
-     * delivery among handlers with different {@link ExceptionalThreadMode}s! */
-    int priority() default 0;
 }
 

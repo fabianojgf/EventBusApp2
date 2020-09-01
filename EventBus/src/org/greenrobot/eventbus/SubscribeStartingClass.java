@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface SubscribeClass {
+public @interface SubscribeStartingClass {
     ThreadMode threadMode() default ThreadMode.POSTING;
 }
 

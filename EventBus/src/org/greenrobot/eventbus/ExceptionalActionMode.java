@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.greenrobot.eventbus;
 
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
+ * Each handler method has a exceptional action mode, which determines what
+ * type of action will be taken to execute the method.
+ *
  * @author Fabiano Gadelha
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface HandleClass {
-    ExceptionalThreadMode threadMode() default ExceptionalThreadMode.THROWING;
+public enum ExceptionalActionMode {
+    /**
+     * This is default action, in which the method will receive the invocation and will be executed.
+     * However, the method will only be executed if the class instance is registered.
+     */
+    HANDLE,
+    /**
+     * This action causes the method to receive the invocation to be executed, even if there is no instance
+     * of the registered class. This action ensures that the class is initialized so that the method is executed.
+     */
+    START_AND_HANDLE
 }
-

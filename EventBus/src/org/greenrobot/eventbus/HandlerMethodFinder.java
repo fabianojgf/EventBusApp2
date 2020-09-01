@@ -180,7 +180,8 @@ class HandlerMethodFinder {
                         Class<?> exceptionalEventType = parameterTypes[0];
                         if (findState.checkAdd(method, exceptionalEventType)) {
                             ExceptionalThreadMode threadMode = handleAnnotation.threadMode();
-                            findState.handlerMethods.add(new HandlerMethod(method, exceptionalEventType, threadMode,
+                            ExceptionalActionMode actionMode = handleAnnotation.actionMode();
+                            findState.handlerMethods.add(new HandlerMethod(method, exceptionalEventType, threadMode, actionMode,
                                     handleAnnotation.priority(), handleAnnotation.sticky()));
                         }
                     }
