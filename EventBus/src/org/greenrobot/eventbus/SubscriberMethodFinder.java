@@ -52,6 +52,21 @@ class SubscriberMethodFinder {
         this.ignoreGeneratedIndex = ignoreGeneratedIndex;
     }
 
+    boolean hasSubscriberMethods(Class<?> subscriberClass) {
+        List<SubscriberMethod> subscriberMethods = METHOD_CACHE.get(subscriberClass);
+        if (subscriberMethods != null) {
+            return !subscriberMethods.isEmpty();
+        }
+
+        if (ignoreGeneratedIndex) {
+            subscriberMethods = findUsingReflection(subscriberClass);
+        } else {
+            subscriberMethods = findUsingInfo(subscriberClass);
+        }
+
+        return !subscriberMethods.isEmpty();
+    }
+
     List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
         List<SubscriberMethod> subscriberMethods = METHOD_CACHE.get(subscriberClass);
         if (subscriberMethods != null) {

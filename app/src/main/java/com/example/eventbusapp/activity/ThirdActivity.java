@@ -12,9 +12,7 @@ import com.example.eventbusapp.R;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
 import org.greenrobot.eventbus.Handle;
-import org.greenrobot.eventbus.HandleStartingClass;
 
-@HandleStartingClass(threadMode = ExceptionalThreadMode.MAIN)
 public class ThirdActivity extends AppCompatActivity {
     TextView textViewResponse3;
 
@@ -53,7 +51,6 @@ public class ThirdActivity extends AppCompatActivity {
     public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->ThirdActivity: onExceptionEvent");
-        //textViewResponse.setText("FirstActivity->ThirdActivity: onExceptionEvent");
         Toast.makeText(this, "[FA/TA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
     }
 }

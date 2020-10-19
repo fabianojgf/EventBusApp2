@@ -18,12 +18,12 @@ package org.greenrobot.eventbus;
 /**
  * @author Fabiano Gadelha
  */
-final class SubscriptionStartClass {
+final class SubscriberClass {
     final Class<?> subscriberClass;
     final SubscriberMethod subscriberMethod;
     volatile boolean active;
 
-    SubscriptionStartClass(Class<?> subscriberClass, SubscriberMethod subscriberMethod) {
+    SubscriberClass(Class<?> subscriberClass, SubscriberMethod subscriberMethod) {
         this.subscriberClass = subscriberClass;
         this.subscriberMethod = subscriberMethod;
         active = true;
@@ -31,8 +31,8 @@ final class SubscriptionStartClass {
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof SubscriptionStartClass) {
-            SubscriptionStartClass otherSubscription = (SubscriptionStartClass) other;
+        if (other instanceof SubscriberClass) {
+            SubscriberClass otherSubscription = (SubscriberClass) other;
             return subscriberClass == otherSubscription.subscriberClass
                     && subscriberMethod.equals(otherSubscription.subscriberMethod);
         } else {

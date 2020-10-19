@@ -55,6 +55,20 @@ class HandlerMethodFinder {
         this.ignoreGeneratedIndex = ignoreGeneratedIndex;
     }
 
+    boolean hasHandlerMethods(Class<?> handlerClass) {
+        List<HandlerMethod> handlerMethods = METHOD_CACHE.get(handlerClass);
+        if (handlerMethods != null) {
+            return !handlerMethods.isEmpty();
+        }
+
+        if (ignoreGeneratedIndex) {
+            handlerMethods = findUsingReflection(handlerClass);
+        } else {
+            handlerMethods = findUsingInfo(handlerClass);
+        }
+        return !handlerMethods.isEmpty();
+    }
+
     List<HandlerMethod> findHandlerMethods(Class<?> handlerClass) {
         List<HandlerMethod> handlerMethods = METHOD_CACHE.get(handlerClass);
         if (handlerMethods != null) {

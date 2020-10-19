@@ -40,7 +40,6 @@ public class EventBusBuilder {
     boolean sendNoSubscriberEvent = true;
     boolean throwSubscriberException;
     boolean eventInheritance = true;
-    boolean classForStartAndSubscribeRegistrationPerformed = false;
 
     boolean logHandlerExceptions = true;
     boolean logNoHandlerMessages = true;
@@ -48,7 +47,8 @@ public class EventBusBuilder {
     boolean sendNoHandlerExceptionalEvent = true;
     boolean throwHandlerException;
     boolean exceptionalEventInheritance = true;
-    boolean classForStartAndHandleRegistrationPerformed = false;
+
+    boolean mappedClassesRegistrationPerformed = false;
 
     boolean ignoreGeneratedIndex;
     boolean strictMethodVerification;
@@ -118,16 +118,6 @@ public class EventBusBuilder {
     }
 
     /**
-     * By default, EventBus considers that the registration of classes for start and subscribe was not carried out.
-     * <p/>
-     * Registration will be performed during the first execution of the {@link EventBus#post(Object)} method.
-     */
-    public EventBusBuilder classForStartAndSubscribeRegistrationPerformed(boolean classForStartAndSubscribeRegistrationPerformed) {
-        this.classForStartAndSubscribeRegistrationPerformed = classForStartAndSubscribeRegistrationPerformed;
-        return this;
-    }
-
-    /**
      *
      * HANDLERS
      *
@@ -183,20 +173,20 @@ public class EventBusBuilder {
     }
 
     /**
-     * By default, EventBus considers that the registration of classes for start and subscribe was not carried out.
-     * <p/>
-     * Registration will be performed during the first execution of the {@link EventBus#throwsException(Object)} method.
-     */
-    public EventBusBuilder classForStartAndHandleRegistrationPerformed(boolean classForStartAndHandleRegistrationPerformed) {
-        this.classForStartAndHandleRegistrationPerformed = classForStartAndHandleRegistrationPerformed;
-        return this;
-    }
-
-    /**
      *
      * GENERAL
      *
      */
+
+    /**
+     * By default, EventBus considers that the registration of classes with methods for subscribe  or handle was not carried out.
+     * <p/>
+     * Registration will be performed during the first execution of {@link EventBus#post(Object)} or {@link EventBus#throwsException(Object)} methods.
+     */
+    public EventBusBuilder mappedClassesRegistrationPerformed(boolean mappedClassesRegistrationPerformed) {
+        this.mappedClassesRegistrationPerformed = mappedClassesRegistrationPerformed;
+        return this;
+    }
 
     /**
      * Provide a custom thread pool to EventBus used for async and background event delivery. This is an advanced

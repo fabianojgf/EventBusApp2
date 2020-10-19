@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.eventbusapp.R;
+import com.example.eventbusapp.service.FirstService;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
@@ -66,12 +67,14 @@ public class MainActivity extends AppCompatActivity {
     public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->MainActivity: onExceptionEvent");
-        buttonIniciar.setText("FirstActivity->MainActivity: onExceptionEvent");
-        //Toast.makeText(this, "[FA/MA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "[FA/MA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
     }
 
     public void iniciar(View view) {
         Intent intent = new Intent(this, FirstActivity.class);
         startActivity(intent);
+
+        //Intent intent2 = new Intent(this, FirstService.class);
+        //startService(intent2);
     }
 }

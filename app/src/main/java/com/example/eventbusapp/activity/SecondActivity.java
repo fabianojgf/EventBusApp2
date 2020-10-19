@@ -10,11 +10,10 @@ import android.widget.Toast;
 import com.example.eventbusapp.R;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.ExceptionalActionMode;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
 import org.greenrobot.eventbus.Handle;
-import org.greenrobot.eventbus.HandleStartingClass;
 
-@HandleStartingClass(threadMode = ExceptionalThreadMode.MAIN)
 public class SecondActivity extends AppCompatActivity {
     TextView textViewResponse;
 
@@ -49,11 +48,10 @@ public class SecondActivity extends AppCompatActivity {
         //EventBus.getDefault(this).unregisterHandler(this);
     }
 
-    @Handle(threadMode = ExceptionalThreadMode.MAIN)
+    @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.START_AND_HANDLE)
     public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->SecondActivity: onExceptionEvent");
-        //textViewResponse.setText("FirstActivity->SecondActivity: onExceptionEvent");
         Toast.makeText(this, "[FA/SA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
     }
 }
