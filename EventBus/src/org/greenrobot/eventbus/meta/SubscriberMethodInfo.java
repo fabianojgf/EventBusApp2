@@ -36,8 +36,17 @@ public class SubscriberMethodInfo {
         this.sticky = sticky;
     }
 
+    public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode,
+                                int priority, boolean sticky) {
+        this(methodName, eventType, threadMode, ActionMode.SUBSCRIBE, priority, sticky);
+    }
+
     public SubscriberMethodInfo(String methodName, Class<?> eventType) {
         this(methodName, eventType, ThreadMode.POSTING, ActionMode.SUBSCRIBE,0, false);
+    }
+
+    public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode) {
+        this(methodName, eventType, threadMode, ActionMode.SUBSCRIBE, 0, false);
     }
 
     public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode) {

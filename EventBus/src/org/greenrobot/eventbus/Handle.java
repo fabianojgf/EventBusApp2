@@ -46,4 +46,3 @@ public @interface Handle {
      * delivery among handlers with different {@link ExceptionalThreadMode}s! */
     int priority() default 0;
 }
-

@@ -15,6 +15,9 @@
  */
 package org.greenrobot.eventbus;
 
+import android.app.Activity;
+import android.app.Service;
+
 /**
  * Each subscriber method has a action mode, which determines what
  * type of action will be taken to execute the method.
@@ -31,5 +34,22 @@ public enum ActionMode {
      * This action causes the method to receive the invocation to be executed, even if there is no instance
      * of the registered class. This action ensures that the class is initialized so that the method is executed.
      */
-    START_AND_SUBSCRIBE
+    START_AND_SUBSCRIBE;
+
+    /**
+     * Checks if the type is enabled to use the informed action mode.
+     *
+     * @param type
+     * @param actionMode
+     * @return
+     */
+    public static boolean isTypeEnableFor(Class<?> type, ActionMode actionMode) {
+        if(actionMode.equals(SUBSCRIBE))
+            return true;
+        else if(actionMode.equals(START_AND_SUBSCRIBE)) {
+            return Activity.class.isAssignableFrom(type)
+                    || Service.class.isAssignableFrom(type);
+        }
+        return false;
+    }
 }

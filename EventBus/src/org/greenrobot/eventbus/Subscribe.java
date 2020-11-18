@@ -43,4 +43,3 @@ public @interface Subscribe {
      * delivery among subscribers with different {@link ThreadMode}s! */
     int priority() default 0;
 }
-

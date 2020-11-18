@@ -53,5 +53,5 @@ public class ThrowableFailureEvent implements HasExecutionScope {
     public void setExecutionScope(Object executionContext) {
         this.executionContext = executionContext;
     }
-    
+
 }

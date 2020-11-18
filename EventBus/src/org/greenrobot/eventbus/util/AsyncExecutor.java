@@ -25,7 +25,7 @@ import java.util.logging.Level;
 /**
  * Executes an {@link RunnableEx} using a thread pool. Thrown exceptions are propagated by posting failure events of any
  * given type (default is {@link ThrowableFailureEvent}).
- * 
+ *
  * @author Markus
  */
 public class AsyncExecutor {
