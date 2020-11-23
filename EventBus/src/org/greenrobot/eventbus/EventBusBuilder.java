@@ -154,7 +154,7 @@ public class EventBusBuilder {
      * exceptions during development.
      */
     public EventBusBuilder throwHandlerException(boolean throwHandlerException) {
-        this.throwSubscriberException = throwSubscriberException;
+        this.throwHandlerException = throwHandlerException;
         return this;
     }
 
@@ -181,7 +181,7 @@ public class EventBusBuilder {
     /**
      * By default, EventBus considers that the registration of classes with methods for subscribe  or handle was not carried out.
      * <p/>
-     * Registration will be performed during the first execution of {@link EventBus#post(Object)} or {@link EventBus#throwsException(Object)} methods.
+     * Registration will be performed during the first execution of {@link EventBus#post(Object)} or {@link EventBus#throwException(Object)} methods.
      */
     public EventBusBuilder mappedClassesRegistrationPerformed(boolean mappedClassesRegistrationPerformed) {
         this.mappedClassesRegistrationPerformed = mappedClassesRegistrationPerformed;

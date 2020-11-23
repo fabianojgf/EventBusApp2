@@ -29,17 +29,17 @@ import android.support.v4.app.DialogFragment;
 
 import org.greenrobot.eventbus.EventBus;
 
-public class ErrorDialogFragments {
+public class ExceptionalEventErrorDialogFragment {
     /** TODO Use config:  Icon res ID to use for all error dialogs. May be configured by each app (optional). */
     public static int ERROR_DIALOG_ICON = 0;
 
-    /** TODO Use config:  Event class to be fired on dismissing the dialog by the user. May be configured by each app. */
-    public static Class<?> EVENT_TYPE_ON_CLICK;
+    /** TODO Use config:  Exceptional event class to be fired on dismissing the dialog by the user. May be configured by each app. */
+    public static Class<?> EXCEPTIONAL_EVENT_TYPE_ON_CLICK;
 
     public static Dialog createDialog(Context context, Bundle arguments, OnClickListener onClickListener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(arguments.getString(ErrorDialogManager.KEY_TITLE));
-        builder.setMessage(arguments.getString(ErrorDialogManager.KEY_MESSAGE));
+        builder.setTitle(arguments.getString(ExceptionalEventErrorDialogManager.KEY_TITLE));
+        builder.setMessage(arguments.getString(ExceptionalEventErrorDialogManager.KEY_MESSAGE));
         if (ERROR_DIALOG_ICON != 0) {
             builder.setIcon(ERROR_DIALOG_ICON);
         }
@@ -48,17 +48,17 @@ public class ErrorDialogFragments {
     }
 
     public static void handleOnClick(DialogInterface dialog, int which, Activity activity, Bundle arguments) {
-        if (EVENT_TYPE_ON_CLICK != null) {
-            Object event;
+        if (EXCEPTIONAL_EVENT_TYPE_ON_CLICK != null) {
+            Object exceptionalEvent;
             try {
-                event = EVENT_TYPE_ON_CLICK.newInstance();
+                exceptionalEvent = EXCEPTIONAL_EVENT_TYPE_ON_CLICK.newInstance();
             } catch (Exception e) {
-                throw new RuntimeException("Event cannot be constructed", e);
+                throw new RuntimeException("Exceptional event cannot be constructed", e);
             }
-            EventBus eventBus = ErrorDialogManager.factory.config.getEventBus();
-            eventBus.post(event);
+            EventBus eventBus = ExceptionalEventErrorDialogManager.factory.config.getEventBus();
+            eventBus.post(exceptionalEvent);
         }
-        boolean finish = arguments.getBoolean(ErrorDialogManager.KEY_FINISH_AFTER_DIALOG, false);
+        boolean finish = arguments.getBoolean(ExceptionalEventErrorDialogManager.KEY_FINISH_AFTER_DIALOG, false);
         if (finish && activity != null) {
             activity.finish();
         }

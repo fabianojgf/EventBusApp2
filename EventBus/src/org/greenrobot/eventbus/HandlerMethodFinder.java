@@ -218,7 +218,7 @@ class HandlerMethodFinder {
 
     static class FindState {
         final List<HandlerMethod> handlerMethods = new ArrayList<>();
-        final Map<Class, Object> anyMethodByEventType = new HashMap<>();
+        final Map<Class, Object> anyMethodByExceptionalEventType = new HashMap<>();
         final Map<String, Class> handlerClassByMethodKey = new HashMap<>();
         final StringBuilder methodKeyBuilder = new StringBuilder(128);
 
@@ -235,7 +235,7 @@ class HandlerMethodFinder {
 
         void recycle() {
             handlerMethods.clear();
-            anyMethodByEventType.clear();
+            anyMethodByExceptionalEventType.clear();
             handlerClassByMethodKey.clear();
             methodKeyBuilder.setLength(0);
             handlerClass = null;
@@ -247,7 +247,7 @@ class HandlerMethodFinder {
         boolean checkAdd(Method method, Class<?> exceptionalEventType) {
             // 2 level check: 1st level with exceptional event type only (fast), 2nd level with complete signature when required.
             // Usually a handler doesn't have methods listening to the same exceptional event type.
-            Object existing = anyMethodByEventType.put(exceptionalEventType, method);
+            Object existing = anyMethodByExceptionalEventType.put(exceptionalEventType, method);
             if (existing == null) {
                 return true;
             } else {
@@ -257,7 +257,7 @@ class HandlerMethodFinder {
                         throw new IllegalStateException();
                     }
                     // Put any non-Method object to "consume" the existing Method
-                    anyMethodByEventType.put(exceptionalEventType, this);
+                    anyMethodByExceptionalEventType.put(exceptionalEventType, this);
                 }
                 return checkAddWithMethodSignature(method, exceptionalEventType);
             }
@@ -296,5 +296,4 @@ class HandlerMethodFinder {
             }
         }
     }
-
 }

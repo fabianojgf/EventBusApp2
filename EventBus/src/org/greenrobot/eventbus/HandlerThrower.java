@@ -37,8 +37,8 @@ public class HandlerThrower extends Handler implements Thrower {
         queue = new PendingThrowQueue();
     }
 
-    public void enqueue(Handlement handlement, Object event) {
-        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, event);
+    public void enqueue(Handlement handlement, Object exceptionalEvent) {
+        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, exceptionalEvent);
         synchronized (this) {
             queue.enqueue(pendingThrow);
             if (!handlerActive) {

@@ -59,19 +59,19 @@ public abstract class AbstractHandlerInfo implements HandlerInfo {
         return shouldCheckSuperclass;
     }
 
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> eventType) {
-        return createHandlerMethod(methodName, eventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.HANDLE, 0, false);
+    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType) {
+        return createHandlerMethod(methodName, exceptionalEventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.HANDLE, 0, false);
     }
 
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {
-        return createHandlerMethod(methodName, eventType, threadMode, actionMode, 0, false);
+    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {
+        return createHandlerMethod(methodName, exceptionalEventType, threadMode, actionMode, 0, false);
     }
 
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
                                                 int priority, boolean sticky) {
         try {
-            Method method = handlerClass.getDeclaredMethod(methodName, eventType);
-            return new HandlerMethod(method, eventType, threadMode, actionMode, priority, sticky);
+            Method method = handlerClass.getDeclaredMethod(methodName, exceptionalEventType);
+            return new HandlerMethod(method, exceptionalEventType, threadMode, actionMode, priority, sticky);
         } catch (NoSuchMethodException e) {
             throw new EventBusException("Could not find handler method in " + handlerClass +
                     ". Maybe a missing ProGuard rule?", e);

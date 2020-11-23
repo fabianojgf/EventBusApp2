@@ -36,7 +36,7 @@ public @interface Handle {
 
     /**
      * If true, delivers the most recent sticky exceptional event (throwed with
-     * {@link EventBus#throwsSticky(Object)}) to this handler (if exceptional event available).
+     * {@link EventBus#throwSticky(Object)}) to this handler (if exceptional event available).
      */
     boolean sticky() default false;
 

@@ -74,7 +74,7 @@ public class FirstActivity extends AppCompatActivity {
             Double result = numerador / denominador;
             editTextResultado.setText(String.valueOf(result));
         } catch(Exception e) {
-            EventBus.getDefault(this).throwsException(new ExceptionEvent2(e));
+            EventBus.getDefault(this).throwException(new ExceptionEvent2(e));
         }
     }
 }

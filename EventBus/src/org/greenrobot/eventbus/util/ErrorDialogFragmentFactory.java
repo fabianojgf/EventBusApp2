@@ -48,23 +48,23 @@ public abstract class ErrorDialogFragmentFactory<T> {
             bundle = new Bundle();
         }
 
-        if (!bundle.containsKey(ErrorDialogManager.KEY_TITLE)) {
+        if (!bundle.containsKey(EventErrorDialogManager.KEY_TITLE)) {
             String title = getTitleFor(event, bundle);
-            bundle.putString(ErrorDialogManager.KEY_TITLE, title);
+            bundle.putString(EventErrorDialogManager.KEY_TITLE, title);
         }
-        if (!bundle.containsKey(ErrorDialogManager.KEY_MESSAGE)) {
+        if (!bundle.containsKey(EventErrorDialogManager.KEY_MESSAGE)) {
             String message = getMessageFor(event, bundle);
-            bundle.putString(ErrorDialogManager.KEY_MESSAGE, message);
+            bundle.putString(EventErrorDialogManager.KEY_MESSAGE, message);
         }
-        if (!bundle.containsKey(ErrorDialogManager.KEY_FINISH_AFTER_DIALOG)) {
-            bundle.putBoolean(ErrorDialogManager.KEY_FINISH_AFTER_DIALOG, finishAfterDialog);
+        if (!bundle.containsKey(EventErrorDialogManager.KEY_FINISH_AFTER_DIALOG)) {
+            bundle.putBoolean(EventErrorDialogManager.KEY_FINISH_AFTER_DIALOG, finishAfterDialog);
         }
-        if (!bundle.containsKey(ErrorDialogManager.KEY_EVENT_TYPE_ON_CLOSE)
+        if (!bundle.containsKey(EventErrorDialogManager.KEY_EVENT_TYPE_ON_CLOSE)
                 && config.defaultEventTypeOnDialogClosed != null) {
-            bundle.putSerializable(ErrorDialogManager.KEY_EVENT_TYPE_ON_CLOSE, config.defaultEventTypeOnDialogClosed);
+            bundle.putSerializable(EventErrorDialogManager.KEY_EVENT_TYPE_ON_CLOSE, config.defaultEventTypeOnDialogClosed);
         }
-        if (!bundle.containsKey(ErrorDialogManager.KEY_ICON_ID) && config.defaultDialogIconId != 0) {
-            bundle.putInt(ErrorDialogManager.KEY_ICON_ID, config.defaultDialogIconId);
+        if (!bundle.containsKey(EventErrorDialogManager.KEY_ICON_ID) && config.defaultDialogIconId != 0) {
+            bundle.putInt(EventErrorDialogManager.KEY_ICON_ID, config.defaultDialogIconId);
         }
         return createErrorFragment(event, bundle);
     }
@@ -90,7 +90,7 @@ public abstract class ErrorDialogFragmentFactory<T> {
         }
 
         protected Fragment createErrorFragment(ThrowableFailureEvent event, Bundle arguments) {
-            ErrorDialogFragments.Support errorFragment = new ErrorDialogFragments.Support();
+            EventErrorDialogFragment.Support errorFragment = new EventErrorDialogFragment.Support();
             errorFragment.setArguments(arguments);
             return errorFragment;
         }
@@ -105,7 +105,7 @@ public abstract class ErrorDialogFragmentFactory<T> {
         }
 
         protected android.app.Fragment createErrorFragment(ThrowableFailureEvent event, Bundle arguments) {
-            ErrorDialogFragments.Honeycomb errorFragment = new ErrorDialogFragments.Honeycomb();
+            EventErrorDialogFragment.Honeycomb errorFragment = new EventErrorDialogFragment.Honeycomb();
             errorFragment.setArguments(arguments);
             return errorFragment;
         }

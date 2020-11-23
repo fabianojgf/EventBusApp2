@@ -17,7 +17,7 @@ package org.greenrobot.eventbus.util;
 
 /**
  * A generic failure event, which can be used by apps to propagate thrown exceptions. Also used in conjunction with
- * {@link ErrorDialogManager}.
+ * {@link EventErrorDialogManager}.
  */
 public class ThrowableFailureEvent implements HasExecutionScope {
     protected final Throwable throwable;

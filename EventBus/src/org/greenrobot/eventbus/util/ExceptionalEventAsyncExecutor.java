@@ -25,14 +25,14 @@ import java.util.logging.Level;
 /**
  * Executes an {@link RunnableEx} using a thread pool. Thrown exceptions are propagated by posting failure events of any
  * given type (default is {@link ThrowableFailureEvent}).
- *
+ * 
  * @author Markus
  */
-public class AsyncExecutor {
+public class ExceptionalEventAsyncExecutor {
 
     public static class Builder {
         private Executor threadPool;
-        private Class<?> failureEventType;
+        private Class<?> failureExceptionalEventType;
         private EventBus eventBus;
 
         private Builder() {
@@ -43,8 +43,8 @@ public class AsyncExecutor {
             return this;
         }
 
-        public Builder failureEventType(Class<?> failureEventType) {
-            this.failureEventType = failureEventType;
+        public Builder failureEventType(Class<?> failureExceptionalEventType) {
+            this.failureExceptionalEventType = failureExceptionalEventType;
             return this;
         }
 
@@ -53,21 +53,21 @@ public class AsyncExecutor {
             return this;
         }
 
-        public AsyncExecutor build() {
+        public ExceptionalEventAsyncExecutor build() {
             return buildForScope(null);
         }
 
-        public AsyncExecutor buildForScope(Object executionContext) {
+        public ExceptionalEventAsyncExecutor buildForScope(Object executionContext) {
             if (eventBus == null) {
                 eventBus = EventBus.getDefault();
             }
             if (threadPool == null) {
                 threadPool = Executors.newCachedThreadPool();
             }
-            if (failureEventType == null) {
-                failureEventType = ThrowableFailureEvent.class;
+            if (failureExceptionalEventType == null) {
+                failureExceptionalEventType = ThrowableFailureEvent.class;
             }
-            return new AsyncExecutor(threadPool, eventBus, failureEventType, executionContext);
+            return new ExceptionalEventAsyncExecutor(threadPool, eventBus, failureExceptionalEventType, executionContext);
         }
     }
 
@@ -80,24 +80,24 @@ public class AsyncExecutor {
         return new Builder();
     }
 
-    public static AsyncExecutor create() {
+    public static ExceptionalEventAsyncExecutor create() {
         return new Builder().build();
     }
 
     private final Executor threadPool;
-    private final Constructor<?> failureEventConstructor;
+    private final Constructor<?> failureExceptionalEventConstructor;
     private final EventBus eventBus;
     private final Object scope;
 
-    private AsyncExecutor(Executor threadPool, EventBus eventBus, Class<?> failureEventType, Object scope) {
+    private ExceptionalEventAsyncExecutor(Executor threadPool, EventBus eventBus, Class<?> failureExceptionalEventType, Object scope) {
         this.threadPool = threadPool;
         this.eventBus = eventBus;
         this.scope = scope;
         try {
-            failureEventConstructor = failureEventType.getConstructor(Throwable.class);
+            failureExceptionalEventConstructor = failureExceptionalEventType.getConstructor(Throwable.class);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(
-                    "Failure event class must have a constructor with one parameter of type Throwable", e);
+                    "Failure exceptional event class must have a constructor with one parameter of type Throwable", e);
         }
     }
 
@@ -109,17 +109,17 @@ public class AsyncExecutor {
                 try {
                     runnable.run();
                 } catch (Exception e) {
-                    Object event;
+                    Object exceptionalEvent;
                     try {
-                        event = failureEventConstructor.newInstance(e);
+                        exceptionalEvent = failureExceptionalEventConstructor.newInstance(e);
                     } catch (Exception e1) {
                         eventBus.getLogger().log(Level.SEVERE, "Original exception:", e);
-                        throw new RuntimeException("Could not create failure event", e1);
+                        throw new RuntimeException("Could not create failure exceptional event", e1);
                     }
-                    if (event instanceof HasExecutionScope) {
-                        ((HasExecutionScope) event).setExecutionScope(scope);
+                    if (exceptionalEvent instanceof HasExecutionScope) {
+                        ((HasExecutionScope) exceptionalEvent).setExecutionScope(scope);
                     }
-                    eventBus.post(event);
+                    eventBus.throwException(exceptionalEvent);
                 }
             }
         });

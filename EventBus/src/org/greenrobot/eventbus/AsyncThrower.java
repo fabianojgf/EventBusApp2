@@ -18,7 +18,7 @@ package org.greenrobot.eventbus;
 
 /**
  * Throws exceptional events in background.
- * 
+ *
  * @author Fabiano Gadelha
  */
 class AsyncThrower implements Runnable, Thrower {
@@ -31,8 +31,8 @@ class AsyncThrower implements Runnable, Thrower {
         queue = new PendingThrowQueue();
     }
 
-    public void enqueue(Handlement handlement, Object event) {
-        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, event);
+    public void enqueue(Handlement handlement, Object exceptionalEvent) {
+        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, exceptionalEvent);
         queue.enqueue(pendingThrow);
         eventBus.getExecutorService().execute(this);
     }

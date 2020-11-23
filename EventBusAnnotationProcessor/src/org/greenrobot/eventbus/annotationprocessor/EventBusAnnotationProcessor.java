@@ -17,6 +17,8 @@ package org.greenrobot.eventbus.annotationprocessor;
 
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor;
 
+import org.greenrobot.eventbus.ExceptionalThreadMode;
+import org.greenrobot.eventbus.Handle;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
@@ -24,6 +26,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -55,7 +58,7 @@ import static net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.AGGREGATI
  * Is an aggregating processor as it writes a single file, the subscriber index file,
  * based on found elements with the @Subscriber annotation.
  */
-@SupportedAnnotationTypes("org.greenrobot.org.greenrobot.org.greenrobot.eventbus.Subscribe")
+@SupportedAnnotationTypes({"org.greenrobot.eventbus.Subscribe","org.greenrobot.eventbus.Handle"})
 @SupportedOptions(value = {"eventBusIndex", "verbose"})
 @IncrementalAnnotationProcessor(AGGREGATING)
 public class EventBusAnnotationProcessor extends AbstractProcessor {
@@ -64,6 +67,9 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
 
     /** Found subscriber methods for a class (without superclasses). */
     private final ListMap<TypeElement, ExecutableElement> methodsByClass = new ListMap<>();
+    private final ListMap<TypeElement, ExecutableElement> subscriberMethodsByClass = new ListMap<>();
+    private final ListMap<TypeElement, ExecutableElement> handlerMethodsByClass = new ListMap<>();
+
     private final Set<TypeElement> classesToSkip = new HashSet<>();
 
     private boolean writerRoundDone;
@@ -109,13 +115,13 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                 messager.printMessage(Diagnostic.Kind.ERROR,
                         "Unexpected processing state: annotations still available after writing.");
             }
-            collectSubscribers(annotations, env, messager);
-            checkForSubscribersToSkip(messager, indexPackage);
+            collectAnnotatedMethods(annotations, env, messager);
+            checkForAnnotatedClassesToSkip(messager, indexPackage);
 
             if (!methodsByClass.isEmpty()) {
                 createInfoIndexFile(index);
             } else {
-                messager.printMessage(Diagnostic.Kind.WARNING, "No @Subscribe annotations found");
+                messager.printMessage(Diagnostic.Kind.WARNING, "No " + generateString(annotations) + " annotations found.");
             }
             writerRoundDone = true;
         } catch (RuntimeException e) {
@@ -126,7 +132,7 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void collectSubscribers(Set<? extends TypeElement> annotations, RoundEnvironment env, Messager messager) {
+    private void collectAnnotatedMethods(Set<? extends TypeElement> annotations, RoundEnvironment env, Messager messager) {
         for (TypeElement annotation : annotations) {
             Set<? extends Element> elements = env.getElementsAnnotatedWith(annotation);
             for (Element element : elements) {
@@ -135,9 +141,18 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                     if (checkHasNoErrors(method, messager)) {
                         TypeElement classElement = (TypeElement) method.getEnclosingElement();
                         methodsByClass.putElement(classElement, method);
-                    }
+
+                        Subscribe subscribe = method.getAnnotation(Subscribe.class);
+                        if(subscribe != null) {
+                            subscriberMethodsByClass.putElement(classElement, method);
+                        }
+
+                        Handle handle = method.getAnnotation(Handle.class);
+                        if(handle != null) {
+                            handlerMethodsByClass.putElement(classElement, method);
+                        }}
                 } else {
-                    messager.printMessage(Diagnostic.Kind.ERROR, "@Subscribe is only valid for methods", element);
+                    messager.printMessage(Diagnostic.Kind.ERROR, "The annotations " + generateString(annotations) + "are only valid for methods.", element);
                 }
             }
         }
@@ -145,45 +160,45 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
 
     private boolean checkHasNoErrors(ExecutableElement element, Messager messager) {
         if (element.getModifiers().contains(Modifier.STATIC)) {
-            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber method must not be static", element);
+            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber and handler methods must not be static.", element);
             return false;
         }
 
         if (!element.getModifiers().contains(Modifier.PUBLIC)) {
-            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber method must be public", element);
+            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber and handler methods must be public.", element);
             return false;
         }
 
         List<? extends VariableElement> parameters = ((ExecutableElement) element).getParameters();
         if (parameters.size() != 1) {
-            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber method must have exactly 1 parameter", element);
+            messager.printMessage(Diagnostic.Kind.ERROR, "Subscriber and handler methods must have exactly 1 parameter.", element);
             return false;
         }
         return true;
     }
 
     /**
-     * Subscriber classes should be skipped if their class or any involved event class are not visible to the index.
+     * Annotated classes should be skipped if their class or any involved event class are not visible to the index.
      */
-    private void checkForSubscribersToSkip(Messager messager, String myPackage) {
+    private void checkForAnnotatedClassesToSkip(Messager messager, String myPackage) {
         for (TypeElement skipCandidate : methodsByClass.keySet()) {
-            TypeElement subscriberClass = skipCandidate;
-            while (subscriberClass != null) {
-                if (!isVisible(myPackage, subscriberClass)) {
+            TypeElement annotatedClass = skipCandidate;
+            while (annotatedClass != null) {
+                if (!isVisible(myPackage, annotatedClass)) {
                     boolean added = classesToSkip.add(skipCandidate);
                     if (added) {
                         String msg;
-                        if (subscriberClass.equals(skipCandidate)) {
+                        if (annotatedClass.equals(skipCandidate)) {
                             msg = "Falling back to reflection because class is not public";
                         } else {
                             msg = "Falling back to reflection because " + skipCandidate +
                                     " has a non-public super class";
                         }
-                        messager.printMessage(Diagnostic.Kind.NOTE, msg, subscriberClass);
+                        messager.printMessage(Diagnostic.Kind.NOTE, msg, annotatedClass);
                     }
                     break;
                 }
-                List<ExecutableElement> methods = methodsByClass.get(subscriberClass);
+                List<ExecutableElement> methods = methodsByClass.get(annotatedClass);
                 if (methods != null) {
                     for (ExecutableElement method : methods) {
                         String skipReason = null;
@@ -203,7 +218,7 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                             boolean added = classesToSkip.add(skipCandidate);
                             if (added) {
                                 String msg = "Falling back to reflection because " + skipReason;
-                                if (!subscriberClass.equals(skipCandidate)) {
+                                if (!annotatedClass.equals(skipCandidate)) {
                                     msg += " (found in super class for " + skipCandidate + ")";
                                 }
                                 messager.printMessage(Diagnostic.Kind.NOTE, msg, param);
@@ -212,7 +227,7 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                         }
                     }
                 }
-                subscriberClass = getSuperclass(subscriberClass);
+                annotatedClass = getSuperclass(annotatedClass);
             }
         }
     }
@@ -272,8 +287,8 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private PackageElement getPackageElement(TypeElement subscriberClass) {
-        Element candidate = subscriberClass.getEnclosingElement();
+    private PackageElement getPackageElement(TypeElement annotatedClass) {
+        Element candidate = annotatedClass.getEnclosingElement();
         while (!(candidate instanceof PackageElement)) {
             candidate = candidate.getEnclosingElement();
         }
@@ -313,7 +328,42 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                         method.getEnclosingElement().getSimpleName() + "." + methodName +
                         "(" + paramElement.getSimpleName() + ")");
             }
+        }
+    }
 
+    private void writeCreateHandlerMethods(BufferedWriter writer, List<ExecutableElement> methods,
+                                           String callPrefix, String myPackage) throws IOException {
+        for (ExecutableElement method : methods) {
+            List<? extends VariableElement> parameters = method.getParameters();
+            TypeMirror paramType = getParamTypeMirror(parameters.get(0), null);
+            TypeElement paramElement = (TypeElement) processingEnv.getTypeUtils().asElement(paramType);
+            String methodName = method.getSimpleName().toString();
+            String eventClass = getClassString(paramElement, myPackage) + ".class";
+
+            Handle handle = method.getAnnotation(Handle.class);
+            List<String> parts = new ArrayList<>();
+            parts.add(callPrefix + "(\"" + methodName + "\",");
+            String lineEnd = "),";
+            if (handle.priority() == 0 && !handle.sticky()) {
+                if (handle.threadMode() == ExceptionalThreadMode.THROWING) {
+                    parts.add(eventClass + lineEnd);
+                } else {
+                    parts.add(eventClass + ",");
+                    parts.add("ExceptionalThreadMode." + handle.threadMode().name() + lineEnd);
+                }
+            } else {
+                parts.add(eventClass + ",");
+                parts.add("ExceptionalThreadMode." + handle.threadMode().name() + ",");
+                parts.add(handle.priority() + ",");
+                parts.add(handle.sticky() + lineEnd);
+            }
+            writeLine(writer, 3, parts.toArray(new String[parts.size()]));
+
+            if (verbose) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Indexed @Handle at " +
+                        method.getEnclosingElement().getSimpleName() + "." + methodName +
+                        "(" + paramElement.getSimpleName() + ")");
+            }
         }
     }
 
@@ -328,26 +378,45 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
             if (myPackage != null) {
                 writer.write("package " + myPackage + ";\n\n");
             }
-            writer.write("import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.meta.SimpleSubscriberInfo;\n");
-            writer.write("import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.meta.SubscriberMethodInfo;\n");
-            writer.write("import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.meta.SubscriberInfo;\n");
-            writer.write("import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.meta.SubscriberInfoIndex;\n\n");
-            writer.write("import org.greenrobot.org.greenrobot.org.greenrobot.eventbus.ThreadMode;\n\n");
+            writer.write("import org.greenrobot.eventbus.meta.SimpleSubscriberInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.SubscriberMethodInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.SubscriberInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.SubscriberInfoIndex;\n\n");
+            writer.write("import org.greenrobot.eventbus.ThreadMode;\n\n");
+            writer.write("import org.greenrobot.eventbus.meta.SimpleHandlerInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.HandlerMethodInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.HandlerInfo;\n");
+            writer.write("import org.greenrobot.eventbus.meta.HandlerInfoIndex;\n\n");
+            writer.write("import org.greenrobot.eventbus.ExceptionalThreadMode;\n\n");
             writer.write("import java.util.HashMap;\n");
             writer.write("import java.util.Map;\n\n");
             writer.write("/** This class is generated by EventBus, do not edit. */\n");
-            writer.write("public class " + clazz + " implements SubscriberInfoIndex {\n");
+            writer.write("public class " + clazz + " implements SubscriberInfoIndex, HandlerInfoIndex {\n");
             writer.write("    private static final Map<Class<?>, SubscriberInfo> SUBSCRIBER_INDEX;\n\n");
+            writer.write("    private static final Map<Class<?>, HandlerInfo> HANDLER_INDEX;\n\n");
             writer.write("    static {\n");
             writer.write("        SUBSCRIBER_INDEX = new HashMap<Class<?>, SubscriberInfo>();\n\n");
+            writer.write("        HANDLER_INDEX = new HashMap<Class<?>, HandlerInfo>();\n\n");
             writeIndexLines(writer, myPackage);
             writer.write("    }\n\n");
             writer.write("    private static void putIndex(SubscriberInfo info) {\n");
             writer.write("        SUBSCRIBER_INDEX.put(info.getSubscriberClass(), info);\n");
             writer.write("    }\n\n");
+            writer.write("    private static void putIndex(HandlerInfo info) {\n");
+            writer.write("        HANDLER_INDEX.put(info.getHandlerClass(), info);\n");
+            writer.write("    }\n\n");
             writer.write("    @Override\n");
             writer.write("    public SubscriberInfo getSubscriberInfo(Class<?> subscriberClass) {\n");
             writer.write("        SubscriberInfo info = SUBSCRIBER_INDEX.get(subscriberClass);\n");
+            writer.write("        if (info != null) {\n");
+            writer.write("            return info;\n");
+            writer.write("        } else {\n");
+            writer.write("            return null;\n");
+            writer.write("        }\n");
+            writer.write("    }\n");
+            writer.write("    @Override\n");
+            writer.write("    public HandlerInfo getHandlerInfo(Class<?> handlerClass) {\n");
+            writer.write("        HandlerInfo info = HANDLER_INDEX.get(handlerClass);\n");
             writer.write("        if (info != null) {\n");
             writer.write("            return info;\n");
             writer.write("        } else {\n");
@@ -369,7 +438,12 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
     }
 
     private void writeIndexLines(BufferedWriter writer, String myPackage) throws IOException {
-        for (TypeElement subscriberTypeElement : methodsByClass.keySet()) {
+        writeSubscriberIndexLines(writer, myPackage);
+        writeHandlerIndexLines(writer, myPackage);
+    }
+
+    private void writeSubscriberIndexLines(BufferedWriter writer, String myPackage) throws IOException {
+        for (TypeElement subscriberTypeElement : subscriberMethodsByClass.keySet()) {
             if (classesToSkip.contains(subscriberTypeElement)) {
                 continue;
             }
@@ -379,11 +453,31 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
                 writeLine(writer, 2,
                         "putIndex(new SimpleSubscriberInfo(" + subscriberClass + ".class,",
                         "true,", "new SubscriberMethodInfo[] {");
-                List<ExecutableElement> methods = methodsByClass.get(subscriberTypeElement);
+                List<ExecutableElement> methods = subscriberMethodsByClass.get(subscriberTypeElement);
                 writeCreateSubscriberMethods(writer, methods, "new SubscriberMethodInfo", myPackage);
                 writer.write("        }));\n\n");
             } else {
                 writer.write("        // Subscriber not visible to index: " + subscriberClass + "\n");
+            }
+        }
+    }
+
+    private void writeHandlerIndexLines(BufferedWriter writer, String myPackage) throws IOException {
+        for (TypeElement handlerTypeElement : handlerMethodsByClass.keySet()) {
+            if (classesToSkip.contains(handlerTypeElement)) {
+                continue;
+            }
+
+            String handlerClass = getClassString(handlerTypeElement, myPackage);
+            if (isVisible(myPackage, handlerTypeElement)) {
+                writeLine(writer, 2,
+                        "putIndex(new SimpleHandlerInfo(" + handlerClass + ".class,",
+                        "true,", "new HandlerMethodInfo[] {");
+                List<ExecutableElement> methods = handlerMethodsByClass.get(handlerTypeElement);
+                writeCreateHandlerMethods(writer, methods, "new HandlerMethodInfo", myPackage);
+                writer.write("        }));\n\n");
+            } else {
+                writer.write("        // Handler not visible to index: " + handlerClass + "\n");
             }
         }
     }
@@ -396,11 +490,11 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
         } else if (modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.PROTECTED)) {
             visible = false;
         } else {
-            String subscriberPackage = getPackageElement(typeElement).getQualifiedName().toString();
+            String annotatedClassPackage = getPackageElement(typeElement).getQualifiedName().toString();
             if (myPackage == null) {
-                visible = subscriberPackage.length() == 0;
+                visible = annotatedClassPackage.length() == 0;
             } else {
-                visible = myPackage.equals(subscriberPackage);
+                visible = myPackage.equals(annotatedClassPackage);
             }
         }
         return visible;
@@ -438,5 +532,18 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
         for (int i = 0; i < indentLevel; i++) {
             writer.write("    ");
         }
+    }
+
+    private static String generateString(Set<? extends TypeElement> annotations) {
+        StringBuilder builder = new StringBuilder();
+        Iterator<? extends TypeElement> it = annotations.iterator();
+        builder.append("[");
+        while(it.hasNext()) {
+            builder.append(it.next().getSimpleName());
+            if(it.hasNext())
+                builder.append(", ");
+        }
+        builder.append("]");
+        return builder.toString();
     }
 }

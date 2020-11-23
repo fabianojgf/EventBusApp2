@@ -43,7 +43,7 @@ import org.greenrobot.eventbus.EventBus;
  *
  * @author Markus
  */
-public class ErrorDialogManager {
+public class EventErrorDialogManager {
 
     public static class SupportManagerFragment extends Fragment {
         protected boolean finishAfterDialog;
@@ -55,8 +55,8 @@ public class ErrorDialogManager {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            eventBus = ErrorDialogManager.factory.config.getEventBus();
-            eventBus.register(this);
+            eventBus = EventErrorDialogManager.factory.config.getEventBus();
+            eventBus.registerSubscriber(this);
             skipRegisterOnNextResume = true;
         }
 
@@ -67,14 +67,14 @@ public class ErrorDialogManager {
                 // registered in onCreate, skip registration in this run
                 skipRegisterOnNextResume = false;
             } else {
-                eventBus = ErrorDialogManager.factory.config.getEventBus();
-                eventBus.register(this);
+                eventBus = EventErrorDialogManager.factory.config.getEventBus();
+                eventBus.registerSubscriber(this);
             }
         }
 
         @Override
         public void onPause() {
-            eventBus.unregister(this);
+            eventBus.unregisterSubscriber(this);
             super.onPause();
         }
 
@@ -125,13 +125,13 @@ public class ErrorDialogManager {
         @Override
         public void onResume() {
             super.onResume();
-            eventBus = ErrorDialogManager.factory.config.getEventBus();
-            eventBus.register(this);
+            eventBus = EventErrorDialogManager.factory.config.getEventBus();
+            eventBus.registerSubscriber(this);
         }
 
         @Override
         public void onPause() {
-            eventBus.unregister(this);
+            eventBus.unregisterSubscriber(this);
             super.onPause();
         }
 
