@@ -55,7 +55,8 @@ public class SubscriberMethod {
     private synchronized void checkMethodString() {
         if (methodString == null) {
             // Method.toString has more overhead, just take relevant parts of the method
-            StringBuilder builder = new StringBuilder(64);
+            StringBuilder builder;
+            builder = new StringBuilder(64);
             builder.append(method.getDeclaringClass().getName());
             builder.append('#').append(method.getName());
             builder.append('(').append(eventType.getName());

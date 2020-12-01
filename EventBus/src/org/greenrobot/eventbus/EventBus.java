@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import dalvik.system.DexFile;
  *
  * @author Markus Junginger, greenrobot
  */
+@SuppressWarnings("ALL")
 public class EventBus {
 
     /** Log tag, apps may override it. */
@@ -152,7 +154,7 @@ public class EventBus {
     /**
      * Convenience singleton for apps using a process-wide EventBus instance.
      *
-     * @return
+     * @return EventBus
      */
     public static EventBus getDefault() {
         return getDefault((Context) null);
@@ -162,7 +164,7 @@ public class EventBus {
      * Convenience singleton for apps using a process-wide EventBus instance.
      *
      * @param context
-     * @return
+     * @return EventBus
      */
     public static EventBus getDefault(android.content.Context context) {
         EventBus instance = defaultInstance;
@@ -179,7 +181,7 @@ public class EventBus {
 
     /**
      *
-     * @return
+     * @return EventBusBuilder
      */
     public static EventBusBuilder builder() {
         return new EventBusBuilder();
@@ -704,16 +706,14 @@ public class EventBus {
 
             //Put exceptional events in immediate queue.
             PostingThreadState immediatePostingState = currentImmediatePostingThreadState.get();
-            List<Object> immediateEventQueue = immediatePostingState.eventQueue;
-            immediateEventQueue.add(event);
+            putEventInPostingQueue(immediatePostingState, event);
 
             //Processes the thread that sends the messages that are in the immediate queue.
             processPostingThread(immediatePostingState);
 
             //Put events in late queue.
             PostingThreadState latePostingState = currentLatePostingThreadState.get();
-            List<Object> lateEventQueue = latePostingState.eventQueue;
-            lateEventQueue.add(event);
+            putEventInPostingQueue(latePostingState, event);
 
             //Prepare to start the activities that will receive the events of the late queue.
             prepareLatePostingEvent(event);
@@ -736,19 +736,73 @@ public class EventBus {
 
             //Put exceptional events in immediate queue.
             ThrowingThreadState immediateThrowingState = currentImmediateThrowingThreadState.get();
-            List<Object> immediateExceptionalEventQueue = immediateThrowingState.exceptionalEventQueue;
-            immediateExceptionalEventQueue.add(exceptionalEvent);
+            putExceptionalEventInThrowingQueue(immediateThrowingState, exceptionalEvent);
 
             //Processes the thread that sends the messages that are in the immediate queue.
             processThrowingThread(immediateThrowingState);
 
             //Put exceptional events in late queue.
             ThrowingThreadState lateThrowingState = currentLateThrowingThreadState.get();
-            List<Object> lateExceptionalEventQueue = lateThrowingState.exceptionalEventQueue;
-            lateExceptionalEventQueue.add(exceptionalEvent);
+            putExceptionalEventInThrowingQueue(lateThrowingState, exceptionalEvent);
 
             //Prepare to start the activities that will receive the exceptional events of the late queue.
             prepareLateThrowingExceptionalEvent(exceptionalEvent);
+        }
+    }
+
+    public void putEventInPostingQueue(PostingThreadState postingThreadState, Object event) {
+        if(postingThreadState.isLate) {
+            HashMap<Class<?>, ArrayList<Object>> lateEventSubscriberQueue = postingThreadState.eventSubscriberQueue;
+            Set<Class<?>> subscriberClasses = getMappedSubscriberClassForEvent(event);
+            Iterator<Class<?>> it = subscriberClasses.iterator();
+            while(it.hasNext()) {
+                Class<?> subscriberClass = it.next();
+
+                if(isRegisteredSubscriberClassForEvent(subscriberClass, event))
+                    continue;
+
+                if(lateEventSubscriberQueue.containsKey(subscriberClass)) {
+                    ArrayList<Object> eventList = lateEventSubscriberQueue.get(subscriberClass);
+                    eventList.add(event);
+                }
+                else {
+                    ArrayList<Object> eventList = new ArrayList<Object>();
+                    eventList.add(event);
+                    lateEventSubscriberQueue.put(subscriberClass, eventList);
+                }
+            }
+        }
+        else {
+            List<Object> immediateEventQueue = postingThreadState.eventQueue;
+            immediateEventQueue.add(event);
+        }
+    }
+
+    public void putExceptionalEventInThrowingQueue(ThrowingThreadState throwingThreadState, Object exceptionalEvent) {
+        if(throwingThreadState.isLate) {
+            HashMap<Class<?>, ArrayList<Object>> lateExceptionalEventHandlerQueue = throwingThreadState.exceptionalEventHandlerQueue;
+            Set<Class<?>> handlerClasses = getMappedHandlerClassForExceptionalEvent(exceptionalEvent);
+            Iterator<Class<?>> it = handlerClasses.iterator();
+            while(it.hasNext()) {
+                Class<?> handlerClass = it.next();
+
+                if(isRegisteredHandlerClassForExceptionalEvent(handlerClass, exceptionalEvent))
+                    continue;
+
+                if(lateExceptionalEventHandlerQueue.containsKey(handlerClass)) {
+                    ArrayList<Object> exceptionalEventList = lateExceptionalEventHandlerQueue.get(handlerClass);
+                    exceptionalEventList.add(exceptionalEvent);
+                }
+                else {
+                    ArrayList<Object> exceptionalEventList = new ArrayList<Object>();
+                    exceptionalEventList.add(exceptionalEvent);
+                    lateExceptionalEventHandlerQueue.put(handlerClass, exceptionalEventList);
+                }
+            }
+        }
+        else {
+            List<Object> immediateExceptionalEventQueue = throwingThreadState.exceptionalEventQueue;
+            immediateExceptionalEventQueue.add(exceptionalEvent);
         }
     }
 
@@ -1025,6 +1079,7 @@ public class EventBus {
      */
     private void processPostingThread(Object subscriber, PostingThreadState postingState) {
         List<Object> eventQueue = postingState.eventQueue;
+        HashMap<Class<?>, ArrayList<Object>> eventSubscriberQueue = postingState.eventSubscriberQueue;
 
         if (!postingState.isPosting) {
             postingState.isMainThread = isMainThread();
@@ -1033,13 +1088,11 @@ public class EventBus {
                 throw new EventBusException("Internal error. Abort state was not reset");
             }
             try {
-                if (subscriber != null) {
-                    Iterator<Object> it = eventQueue.iterator();
-                    while(it.hasNext()) {
-                        Object event = it.next();
-                        if(isSubscriberForEvent(subscriber, event)) {
-                            postSingleEvent(event, postingState);
-                            it.remove();
+                if (subscriber != null && postingState.isLate) {
+                    ArrayList<Object> eventList = eventSubscriberQueue.get(subscriber.getClass());
+                    if(eventList != null) {
+                        while (!eventList.isEmpty()) {
+                            postSingleEvent(eventList.remove(0), subscriber, postingState);
                         }
                     }
                 }
@@ -1072,6 +1125,7 @@ public class EventBus {
      */
     private void processThrowingThread(Object handler, ThrowingThreadState throwingState) {
         List<Object> exceptionalEventQueue = throwingState.exceptionalEventQueue;
+        HashMap<Class<?>, ArrayList<Object>> exceptionalEventHandlerQueue = throwingState.exceptionalEventHandlerQueue;
 
         if (!throwingState.isThrowing) {
             throwingState.isMainThread = isMainThread();
@@ -1080,19 +1134,17 @@ public class EventBus {
                 throw new EventBusException("Internal error. Abort state was not reset");
             }
             try {
-                if (handler != null) {
-                    Iterator<Object> it = exceptionalEventQueue.iterator();
-                    while(it.hasNext()) {
-                        Object exceptionalEvent = it.next();
-                        if(isHandlerForExceptionalEvent(handler, exceptionalEvent)) {
-                            throwsSingleExceptionalEvent(exceptionalEvent, throwingState);
-                            it.remove();
+                if (handler != null && throwingState.isLate) {
+                    ArrayList<Object> exceptionalEventList = exceptionalEventHandlerQueue.get(handler.getClass());
+                    if(exceptionalEventList != null) {
+                        while (!exceptionalEventList.isEmpty()) {
+                            throwSingleExceptionalEvent(exceptionalEventList.remove(0), handler, throwingState);
                         }
                     }
                 }
                 else {
                     while (!exceptionalEventQueue.isEmpty()) {
-                        throwsSingleExceptionalEvent(exceptionalEventQueue.remove(0), throwingState);
+                        throwSingleExceptionalEvent(exceptionalEventQueue.remove(0), throwingState);
                     }
                 }
             } finally {
@@ -1110,6 +1162,18 @@ public class EventBus {
      * @throws Error
      */
     private void postSingleEvent(Object event, PostingThreadState postingState) throws Error {
+        postSingleEvent(event, null, postingState);
+    }
+
+    /**
+     * Post a specific event for a specific subscriber object.
+     *
+     * @param event
+     * @param subscribe
+     * @param postingState
+     * @throws Error
+     */
+    private void postSingleEvent(Object event, Object subscribe, PostingThreadState postingState) throws Error {
         Class<?> eventClass = event.getClass();
         boolean subscriptionFound = false;
         if (eventInheritance) {
@@ -1117,10 +1181,10 @@ public class EventBus {
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                subscriptionFound |= postSingleEventForEventType(event, postingState, clazz);
+                subscriptionFound |= postSingleEventForEventType(event, subscribe, postingState, clazz);
             }
         } else {
-            subscriptionFound = postSingleEventForEventType(event, postingState, eventClass);
+            subscriptionFound = postSingleEventForEventType(event, subscribe, postingState, eventClass);
         }
         if (!subscriptionFound) {
             if (logNoSubscriberMessages) {
@@ -1140,7 +1204,19 @@ public class EventBus {
      * @param throwingState
      * @throws Error
      */
-    private void throwsSingleExceptionalEvent(Object exceptionalEvent, ThrowingThreadState throwingState) throws Error {
+    private void throwSingleExceptionalEvent(Object exceptionalEvent, ThrowingThreadState throwingState) throws Error {
+        throwSingleExceptionalEvent(exceptionalEvent, null, throwingState);
+    }
+
+    /**
+     * Post a specific exceptional event for a specific registered handler object.
+     *
+     * @param exceptionalEvent
+     * @param handler
+     * @param throwingState
+     * @throws Error
+     */
+    private void throwSingleExceptionalEvent(Object exceptionalEvent, Object handler, ThrowingThreadState throwingState) throws Error {
         Class<?> exceptionalEventClass = exceptionalEvent.getClass();
         boolean handlementFound = false;
         if (exceptionalEventInheritance) {
@@ -1148,10 +1224,10 @@ public class EventBus {
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                handlementFound |= throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, throwingState, clazz);
+                handlementFound |= throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, clazz);
             }
         } else {
-            handlementFound = throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, throwingState, exceptionalEventClass);
+            handlementFound = throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, exceptionalEventClass);
         }
         if (!handlementFound) {
             if (logNoHandlerMessages) {
@@ -1171,13 +1247,16 @@ public class EventBus {
      * @param eventClass
      * @return
      */
-    private boolean postSingleEventForEventType(Object event, PostingThreadState postingState, Class<?> eventClass) {
+    private boolean postSingleEventForEventType(Object event, Object subscriber, PostingThreadState postingState, Class<?> eventClass) {
         CopyOnWriteArrayList<Subscription> subscriptions;
         synchronized (this) {
             subscriptions = subscriptionsByEventType.get(eventClass);
         }
         if (subscriptions != null && !subscriptions.isEmpty()) {
             for (Subscription subscription : subscriptions) {
+                if(postingState.isLate && subscriber != null && !subscription.subscriber.equals(subscriber))
+                    continue;
+
                 postingState.event = event;
                 postingState.subscription = subscription;
                 boolean aborted;
@@ -1205,13 +1284,16 @@ public class EventBus {
      * @param exceptionalEventClass
      * @return
      */
-    private boolean throwsSingleExceptionalEventForExceptionalEventType(Object exceptionalEvent, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
+    private boolean throwsSingleExceptionalEventForExceptionalEventType(Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<Handlement> handlements;
         synchronized (this) {
             handlements = handlementsByExceptionalEventType.get(exceptionalEventClass);
         }
         if (handlements != null && !handlements.isEmpty()) {
             for (Handlement handlement : handlements) {
+                if(throwingState.isLate && handler != null && !handlement.handler.equals(handler))
+                    continue;
+
                 throwingState.exceptionalEvent = exceptionalEvent;
                 throwingState.handlement = handlement;
                 boolean aborted;
@@ -1439,12 +1521,12 @@ public class EventBus {
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                if(isSubscriberForEventType(subscriberClass, clazz))
+                if(isSubscriberForEventType(subscriber, clazz))
                     return true;
             }
             return false;
         }
-        return isSubscriberForEventType(subscriberClass, eventClass);
+        return isSubscriberForEventType(subscriber, eventClass);
     }
 
     /**
@@ -1462,12 +1544,12 @@ public class EventBus {
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                if(isHandlerForExceptionalEventType(handlerClass, clazz))
+                if(isHandlerForExceptionalEventType(handler, clazz))
                     return true;
             }
             return false;
         }
-        return isHandlerForExceptionalEventType(handlerClass, exceptionalEventClass);
+        return isHandlerForExceptionalEventType(handler, exceptionalEventClass);
     }
 
     /**
@@ -1505,6 +1587,64 @@ public class EventBus {
             if(handlements != null && !handlements.isEmpty()) {
                 for(Handlement handlement : handlements) {
                     if(handlement.handler.equals(handler))
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private boolean isRegisteredSubscriberClassForEvent(Class<?> subscriberClass, Object event) {
+        Class<?> eventClass = event.getClass();
+        if (eventInheritance) {
+            List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);
+            int countTypes = eventTypes.size();
+            for (int h = 0; h < countTypes; h++) {
+                Class<?> clazz = eventTypes.get(h);
+                if(isRegisteredSubscriberClassForEventType(subscriberClass, clazz))
+                    return true;
+            }
+            return false;
+        }
+        return isRegisteredSubscriberClassForEventType(subscriberClass, eventClass);
+    }
+
+    private boolean isRegisteredSubscriberClassForEventType(Class<?> subscriberClassType, Class<?> eventClass) {
+        CopyOnWriteArrayList<Subscription> subscriptions;
+        synchronized (this) {
+            subscriptions = subscriptionsByEventType.get(eventClass);
+            if(subscriptions != null && !subscriptions.isEmpty()) {
+                for(Subscription subscription : subscriptions) {
+                    if(subscription.subscriber.getClass().equals(subscriberClassType))
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private boolean isRegisteredHandlerClassForExceptionalEvent(Class<?> handlerClass, Object exceptionalEvent) {
+        Class<?> exceptionalEventClass = exceptionalEvent.getClass();
+        if (exceptionalEventInheritance) {
+            List<Class<?>> exceptionalEventTypes = lookupAllExceptionalEventTypes(exceptionalEventClass);
+            int countTypes = exceptionalEventTypes.size();
+            for (int h = 0; h < countTypes; h++) {
+                Class<?> clazz = exceptionalEventTypes.get(h);
+                if(isRegisteredHandlerClassForExceptionalEventType(handlerClass, clazz))
+                    return true;
+            }
+            return false;
+        }
+        return isRegisteredHandlerClassForExceptionalEventType(handlerClass, exceptionalEventClass);
+    }
+
+    private boolean isRegisteredHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
+        CopyOnWriteArrayList<Handlement> handlements;
+        synchronized (this) {
+            handlements = handlementsByExceptionalEventType.get(exceptionalEventClass);
+            if(handlements != null && !handlements.isEmpty()) {
+                for(Handlement handlement : handlements) {
+                    if(handlement.handler.getClass().equals(handlerClassType))
                         return true;
                 }
             }
@@ -1609,6 +1749,68 @@ public class EventBus {
                 }
             }
             return false;
+        }
+    }
+
+    private Set<Class<?>> getMappedSubscriberClassForEvent(Object event) {
+        Set<Class<?>> subscriberClassesSet = new HashSet<Class<?>>();
+        Class<?> eventClass = event.getClass();
+        if (eventInheritance) {
+            List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);
+            int countTypes = eventTypes.size();
+            for (int h = 0; h < countTypes; h++) {
+                Class<?> clazz = eventTypes.get(h);
+                subscriberClassesSet.addAll(getMappedSubscriberClassForEventType(clazz));
+            }
+        }
+        else {
+            subscriberClassesSet.addAll(getMappedSubscriberClassForEventType(eventClass));
+        }
+        return subscriberClassesSet;
+    }
+
+    private Set<Class<?>> getMappedHandlerClassForExceptionalEvent(Object exceptionalEvent) {
+        Set<Class<?>> handlerClassesSet = new HashSet<Class<?>>();
+        Class<?> exceptionalEventClass = exceptionalEvent.getClass();
+        if (exceptionalEventInheritance) {
+            List<Class<?>> exceptionalEventTypes = lookupAllExceptionalEventTypes(exceptionalEventClass);
+            int countTypes = exceptionalEventTypes.size();
+            for (int h = 0; h < countTypes; h++) {
+                Class<?> clazz = exceptionalEventTypes.get(h);
+                handlerClassesSet.addAll(getMappedHandlerClassForExceptionalEventType(clazz));
+            }
+        }
+        else {
+            handlerClassesSet.addAll(getMappedHandlerClassForExceptionalEventType(exceptionalEventClass));
+        }
+        return handlerClassesSet;
+    }
+
+    private Set<Class<?>> getMappedSubscriberClassForEventType(Class<?> eventClass) {
+        Set<Class<?>> subscriberClassesSet = new HashSet<Class<?>>();
+        CopyOnWriteArrayList<SubscriberClass> subscriberClasses;
+        synchronized (this) {
+            subscriberClasses = mappedSubscriberClassesByEventType.get(eventClass);
+            if(subscriberClasses != null && !subscriberClasses.isEmpty()) {
+                for(SubscriberClass subscriberClass : subscriberClasses) {
+                    subscriberClassesSet.add(subscriberClass.subscriberClass);
+                }
+            }
+            return subscriberClassesSet;
+        }
+    }
+
+    private Set<Class<?>> getMappedHandlerClassForExceptionalEventType(Class<?> exceptionalEventClass) {
+        Set<Class<?>> handlerClassesSet = new HashSet<Class<?>>();
+        CopyOnWriteArrayList<HandlerClass> handlerClasses;
+        synchronized (this) {
+            handlerClasses = mappedHandlerClassesByExceptionalEventType.get(exceptionalEventClass);
+            if(handlerClasses != null && !handlerClasses.isEmpty()) {
+                for(HandlerClass handlerClass : handlerClasses) {
+                    handlerClassesSet.add(handlerClass.handlerClass);
+                }
+            }
+            return handlerClassesSet;
         }
     }
 
@@ -2018,6 +2220,7 @@ public class EventBus {
      */
     final static class PostingThreadState {
         final List<Object> eventQueue = new ArrayList<>();
+        final HashMap<Class<?>, ArrayList<Object>> eventSubscriberQueue = new HashMap<Class<?>, ArrayList<Object>>();
         boolean isPosting;
         boolean isMainThread;
         boolean isLate;
@@ -2040,6 +2243,7 @@ public class EventBus {
      */
     final static class ThrowingThreadState {
         final List<Object> exceptionalEventQueue = new ArrayList<>();
+        final HashMap<Class<?>, ArrayList<Object>> exceptionalEventHandlerQueue = new HashMap<Class<?>, ArrayList<Object>>();
         boolean isThrowing;
         boolean isMainThread;
         boolean isLate;

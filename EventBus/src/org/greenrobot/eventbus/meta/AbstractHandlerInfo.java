@@ -24,11 +24,11 @@ import java.lang.reflect.Method;
 
 /** Base class for generated handler meta info classes created by annotation processing. */
 public abstract class AbstractHandlerInfo implements HandlerInfo {
-    private final Class handlerClass;
+    private final Class<?> handlerClass;
     private final Class<? extends HandlerInfo> superHandlerInfoClass;
     private final boolean shouldCheckSuperclass;
 
-    protected AbstractHandlerInfo(Class handlerClass, Class<? extends HandlerInfo> superHandlerInfoClass,
+    protected AbstractHandlerInfo(Class<?> handlerClass, Class<? extends HandlerInfo> superHandlerInfoClass,
                                   boolean shouldCheckSuperclass) {
         this.handlerClass = handlerClass;
         this.superHandlerInfoClass = superHandlerInfoClass;

@@ -215,10 +215,17 @@ class SubscriberMethodFinder {
     }
 
     static class FindState {
-        final List<SubscriberMethod> subscriberMethods = new ArrayList<>();
-        final Map<Class, Object> anyMethodByEventType = new HashMap<>();
-        final Map<String, Class> subscriberClassByMethodKey = new HashMap<>();
-        final StringBuilder methodKeyBuilder = new StringBuilder(128);
+        final List<SubscriberMethod> subscriberMethods;
+        final Map<Class<?>, Object> anyMethodByEventType;
+        final Map<String, Class<?>> subscriberClassByMethodKey;
+        final StringBuilder methodKeyBuilder;
+
+        {
+            subscriberMethods = new ArrayList<>();
+            anyMethodByEventType = new HashMap<>();
+            subscriberClassByMethodKey = new HashMap<>();
+            methodKeyBuilder = new StringBuilder(128);
+        }
 
         Class<?> subscriberClass;
         Class<?> clazz;

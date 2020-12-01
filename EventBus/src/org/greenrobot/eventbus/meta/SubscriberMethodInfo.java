@@ -52,5 +52,4 @@ public class SubscriberMethodInfo {
     public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode) {
         this(methodName, eventType, threadMode, actionMode, 0, false);
     }
-
 }

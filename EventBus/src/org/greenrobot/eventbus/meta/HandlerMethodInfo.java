@@ -15,10 +15,8 @@
  */
 package org.greenrobot.eventbus.meta;
 
-import org.greenrobot.eventbus.ActionMode;
 import org.greenrobot.eventbus.ExceptionalActionMode;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
-import org.greenrobot.eventbus.ThreadMode;
 
 public class HandlerMethodInfo {
     final String methodName;

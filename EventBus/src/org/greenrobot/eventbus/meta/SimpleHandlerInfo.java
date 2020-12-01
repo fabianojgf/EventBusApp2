@@ -24,7 +24,7 @@ public class SimpleHandlerInfo extends AbstractHandlerInfo {
 
     private final HandlerMethodInfo[] methodInfos;
 
-    public SimpleHandlerInfo(Class handlerClass, boolean shouldCheckSuperclass, HandlerMethodInfo[] methodInfos) {
+    public SimpleHandlerInfo(Class<?> handlerClass, boolean shouldCheckSuperclass, HandlerMethodInfo[] methodInfos) {
         super(handlerClass, null, shouldCheckSuperclass);
         this.methodInfos = methodInfos;
     }

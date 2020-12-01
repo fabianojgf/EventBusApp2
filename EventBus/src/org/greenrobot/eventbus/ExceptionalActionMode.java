@@ -24,6 +24,7 @@ import android.app.Service;
  *
  * @author Fabiano Gadelha
  */
+@SuppressWarnings("JavaDoc")
 public enum ExceptionalActionMode {
     /**
      * This is default action, in which the method will receive the invocation and will be executed.

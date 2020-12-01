@@ -62,10 +62,10 @@ public class EventBusBuilder {
     EventBusBuilder() {
     }
 
-    /**
-     *
-     * SUBSCRIBERS
-     *
+    /*
+
+      SUBSCRIBERS
+
      */
 
     /** Default: true */
@@ -117,7 +117,7 @@ public class EventBusBuilder {
         return this;
     }
 
-    /**
+    /*
      *
      * HANDLERS
      *
@@ -172,7 +172,7 @@ public class EventBusBuilder {
         return this;
     }
 
-    /**
+    /*
      *
      * GENERAL
      *
@@ -299,7 +299,6 @@ public class EventBusBuilder {
 
     /** Builds an EventBus based on the current configuration. */
     public EventBus build() {
-        return new EventBus((EventBusBuilder) this);
+        return new EventBus(this);
     }
-
 }

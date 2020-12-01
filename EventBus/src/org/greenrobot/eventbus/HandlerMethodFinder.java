@@ -217,10 +217,17 @@ class HandlerMethodFinder {
     }
 
     static class FindState {
-        final List<HandlerMethod> handlerMethods = new ArrayList<>();
-        final Map<Class, Object> anyMethodByExceptionalEventType = new HashMap<>();
-        final Map<String, Class> handlerClassByMethodKey = new HashMap<>();
-        final StringBuilder methodKeyBuilder = new StringBuilder(128);
+        final List<HandlerMethod> handlerMethods;
+        final Map<Class<?>, Object> anyMethodByExceptionalEventType;
+        final Map<String, Class<?>> handlerClassByMethodKey;
+        final StringBuilder methodKeyBuilder;
+
+        {
+            handlerMethods = new ArrayList<>();
+            anyMethodByExceptionalEventType = new HashMap<>();
+            handlerClassByMethodKey = new HashMap<>();
+            methodKeyBuilder = new StringBuilder(128);
+        }
 
         Class<?> handlerClass;
         Class<?> clazz;
