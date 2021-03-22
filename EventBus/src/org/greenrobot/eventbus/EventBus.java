@@ -38,6 +38,8 @@ import java.util.logging.Level;
 
 import dalvik.system.DexFile;
 
+import static org.greenrobot.eventbus.ComponentCommand.*;
+
 /**
  * EventBus is a central publish/subscribe event system for Java and Android.
  * Events are posted ({@link #post(Object)}) to the bus, which delivers it to subscribers that have a matching handler
@@ -2005,11 +2007,23 @@ public class EventBus {
                         if(Activity.class.isAssignableFrom(handlerClassType)) {
                             Intent intent = new Intent(context, handlerClassType);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
+
+                            //context.startActivity(intent);
+                            try {
+                                executeCommand(context, intent, handlerClass.handlerMethod.command);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                         else if(Service.class.isAssignableFrom(handlerClassType)) {
                             Intent intent = new Intent(context, handlerClassType);
-                            context.startService(intent);
+
+                            //context.startService(intent);
+                            try {
+                                executeCommand(context, intent, handlerClass.handlerMethod.command);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                     else {

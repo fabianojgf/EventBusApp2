@@ -16,6 +16,7 @@
 package org.greenrobot.eventbus.meta;
 
 import org.greenrobot.eventbus.ActionMode;
+import org.greenrobot.eventbus.ComponentCommand;
 import org.greenrobot.eventbus.EventBusException;
 import org.greenrobot.eventbus.SubscriberMethod;
 import org.greenrobot.eventbus.ThreadMode;
@@ -60,18 +61,23 @@ public abstract class AbstractSubscriberInfo implements SubscriberInfo {
     }
 
     protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType) {
-        return createSubscriberMethod(methodName, eventType, ThreadMode.POSTING, ActionMode.SUBSCRIBE,0, false);
+        return createSubscriberMethod(methodName, eventType, ThreadMode.POSTING, ActionMode.SUBSCRIBE, ComponentCommand.DEFAULT,0, false);
     }
 
     protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode) {
-        return createSubscriberMethod(methodName, eventType, threadMode, actionMode, 0, false);
+        return createSubscriberMethod(methodName, eventType, threadMode, actionMode, ComponentCommand.DEFAULT);
     }
 
     protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode,
-                                                      int priority, boolean sticky) {
+                                                      ComponentCommand command) {
+        return createSubscriberMethod(methodName, eventType, threadMode, actionMode, command, 0, false);
+    }
+
+    protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode,
+                                                      ComponentCommand command, int priority, boolean sticky) {
         try {
             Method method = subscriberClass.getDeclaredMethod(methodName, eventType);
-            return new SubscriberMethod(method, eventType, threadMode, actionMode, priority, sticky);
+            return new SubscriberMethod(method, eventType, threadMode, actionMode, command, priority, sticky);
         } catch (NoSuchMethodException e) {
             throw new EventBusException("Could not find subscriber method in " + subscriberClass +
                     ". Maybe a missing ProGuard rule?", e);

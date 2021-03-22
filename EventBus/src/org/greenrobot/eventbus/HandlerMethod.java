@@ -26,17 +26,19 @@ public class HandlerMethod {
     final Method method;
     final ExceptionalThreadMode threadMode;
     final ExceptionalActionMode actionMode;
+    final ComponentCommand command;
     final Class<?> exceptionalEventType;
     final int priority;
     final boolean sticky;
     /** Used for efficient comparison */
     String methodString;
 
-    public HandlerMethod(Method method, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode, int priority, boolean sticky) {
+    public HandlerMethod(Method method, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode, ComponentCommand command, int priority, boolean sticky) {
         this.method = method;
         this.threadMode = threadMode;
         this.exceptionalEventType = exceptionalEventType;
         this.actionMode = actionMode;
+        this.command = command;
         this.priority = priority;
         this.sticky = sticky;
     }

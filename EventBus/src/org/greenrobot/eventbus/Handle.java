@@ -34,6 +34,8 @@ public @interface Handle {
 
     ExceptionalActionMode actionMode() default ExceptionalActionMode.HANDLE;
 
+    ComponentCommand command() default ComponentCommand.DEFAULT;
+
     /**
      * If true, delivers the most recent sticky exceptional event (throwed with
      * {@link EventBus#throwSticky(Object)}) to this handler (if exceptional event available).

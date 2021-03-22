@@ -31,6 +31,8 @@ public @interface Subscribe {
 
     ActionMode actionMode() default ActionMode.SUBSCRIBE;
 
+    ComponentCommand command() default ComponentCommand.DEFAULT;
+
     /**
      * If true, delivers the most recent sticky event (posted with
      * {@link EventBus#postSticky(Object)}) to this subscriber (if event available).
