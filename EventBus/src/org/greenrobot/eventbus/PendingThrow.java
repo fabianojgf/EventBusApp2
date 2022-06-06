@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Fabiano Gadelha
+ * @author ---
  */
 final class PendingThrow {
     private final static List<PendingThrow> pendingThrowPool = new ArrayList<PendingThrow>();

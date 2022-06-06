@@ -68,7 +68,7 @@ public interface Logger {
             // also check main looper to see if we have "good" Android classes (not Stubs etc.)
             return AndroidLogger.isAndroidLogAvailable() && getAndroidMainLooperOrNull() != null
                     ? new AndroidLogger("EventBus") :
-                    new Logger.SystemOutLogger();
+                    new SystemOutLogger();
         }
 
         static Object getAndroidMainLooperOrNull() {

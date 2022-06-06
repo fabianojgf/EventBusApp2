@@ -38,15 +38,15 @@ public class SubscriberMethodInfo {
 
     public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode,
                                 int priority, boolean sticky) {
-        this(methodName, eventType, threadMode, ActionMode.SUBSCRIBE, priority, sticky);
+        this(methodName, eventType, threadMode, ActionMode.EAGER_SUBSCRIBE, priority, sticky);
     }
 
     public SubscriberMethodInfo(String methodName, Class<?> eventType) {
-        this(methodName, eventType, ThreadMode.POSTING, ActionMode.SUBSCRIBE,0, false);
+        this(methodName, eventType, ThreadMode.POSTING, ActionMode.EAGER_SUBSCRIBE,0, false);
     }
 
     public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode) {
-        this(methodName, eventType, threadMode, ActionMode.SUBSCRIBE, 0, false);
+        this(methodName, eventType, threadMode, ActionMode.EAGER_SUBSCRIBE, 0, false);
     }
 
     public SubscriberMethodInfo(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode) {

@@ -41,7 +41,7 @@ import org.greenrobot.eventbus.EventBus;
  * 
  * For more complex mappings, you can supply your own {@link ErrorDialogFragmentFactory}.
  * 
- * @author Fabiano Gadelha
+ * @author ---
  */
 public class ExceptionalEventErrorDialogManager {
 

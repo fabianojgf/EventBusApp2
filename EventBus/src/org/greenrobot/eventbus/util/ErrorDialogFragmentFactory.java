@@ -36,7 +36,7 @@ public abstract class ErrorDialogFragmentFactory<T> {
      * Prepares the fragment's arguments and creates the fragment. May be overridden to provide custom error fragments.
      */
     protected T prepareErrorFragment(ThrowableFailureEvent event, boolean finishAfterDialog,
-                                     Bundle argumentsForErrorDialog) {
+            Bundle argumentsForErrorDialog) {
         if (event.isSuppressErrorUi()) {
             // Show nothing by default
             return null;

@@ -60,7 +60,7 @@ public abstract class AbstractSubscriberInfo implements SubscriberInfo {
     }
 
     protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType) {
-        return createSubscriberMethod(methodName, eventType, ThreadMode.POSTING, ActionMode.SUBSCRIBE,0, false);
+        return createSubscriberMethod(methodName, eventType, ThreadMode.POSTING, ActionMode.EAGER_SUBSCRIBE,0, false);
     }
 
     protected SubscriberMethod createSubscriberMethod(String methodName, Class<?> eventType, ThreadMode threadMode, ActionMode actionMode) {

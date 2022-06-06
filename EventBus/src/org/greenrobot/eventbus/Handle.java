@@ -24,7 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @author Fabiano Gadelha
+ * @author ---
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
 public @interface Handle {
     ExceptionalThreadMode threadMode() default ExceptionalThreadMode.THROWING;
 
-    ExceptionalActionMode actionMode() default ExceptionalActionMode.HANDLE;
+    ExceptionalActionMode actionMode() default ExceptionalActionMode.EAGER_HANDLE;
 
     /**
      * If true, delivers the most recent sticky exceptional event (throwed with

@@ -20,7 +20,7 @@ import java.util.logging.Level;
 /**
  * Throws exceptional events in background.
  *
- * @author Fabiano Gadelha
+ * @author ---
  */
 final class BackgroundThrower implements Runnable, Thrower {
 
@@ -70,4 +70,5 @@ final class BackgroundThrower implements Runnable, Thrower {
             executorRunning = false;
         }
     }
+
 }

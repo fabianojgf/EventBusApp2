@@ -291,6 +291,8 @@ class SubscriberMethodFinder {
                 clazz = null;
             } else {
                 clazz = clazz.getSuperclass();
+                if(clazz == null)
+                    return;
                 String clazzName = clazz.getName();
                 // Skip system classes, this degrades performance.
                 // Also we might avoid some ClassNotFoundException (see FAQ for background).

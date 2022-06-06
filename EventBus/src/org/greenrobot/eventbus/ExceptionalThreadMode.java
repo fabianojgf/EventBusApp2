@@ -20,7 +20,7 @@ package org.greenrobot.eventbus;
  * EventBus takes care of threading independently from the throwing thread.
  * 
  * @see EventBus#registerHandler(Object)
- * @author Fabiano Gadelha
+ * @author ---
  */
 public enum ExceptionalThreadMode {
     /**

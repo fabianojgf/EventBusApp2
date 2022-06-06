@@ -18,7 +18,7 @@ package org.greenrobot.eventbus.meta;
 import org.greenrobot.eventbus.SubscriberMethod;
 
 /**
- * Uses {@link SubscriberMethodInfo} objects to create {@link org.greenrobot.eventbus.SubscriberMethod} objects on demand.
+ * Uses {@link SubscriberMethodInfo} objects to create {@link SubscriberMethod} objects on demand.
  */
 public class SimpleSubscriberInfo extends AbstractSubscriberInfo {
 

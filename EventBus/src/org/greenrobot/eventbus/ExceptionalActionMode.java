@@ -22,20 +22,20 @@ import android.app.Service;
  * Each handler method has a exceptional action mode, which determines what
  * type of action will be taken to execute the method.
  *
- * @author Fabiano Gadelha
+ * @author ---
  */
 @SuppressWarnings("JavaDoc")
 public enum ExceptionalActionMode {
     /**
      * This is default action, in which the method will receive the invocation and will be executed.
-     * However, the method will only be executed if the class instance is registered.
+     * However, the method will only be executed if the class instance is registered. (Eager Delivery)
      */
-    HANDLE,
+    EAGER_HANDLE,
     /**
      * This action causes the method to receive the invocation to be executed, even if there is no instance
-     * of the registered class. This action ensures that the class is initialized so that the method is executed.
+     * of the registered class. This action ensures that the class is initialized so that the method is executed. (Lazy Delivery)
      */
-    START_AND_HANDLE;
+    LAZY_HANDLE;
 
     /**
      * Checks if the type is enabled to use the informed action mode.
@@ -45,9 +45,9 @@ public enum ExceptionalActionMode {
      * @return
      */
     public static boolean isTypeEnableFor(Class<?> type, ExceptionalActionMode actionMode) {
-        if(actionMode.equals(HANDLE))
+        if(actionMode.equals(EAGER_HANDLE))
             return true;
-        else if(actionMode.equals(START_AND_HANDLE)) {
+        else if(actionMode.equals(LAZY_HANDLE)) {
             return Activity.class.isAssignableFrom(type)
                     || Service.class.isAssignableFrom(type);
         }

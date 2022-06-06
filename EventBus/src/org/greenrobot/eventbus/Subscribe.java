@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 public @interface Subscribe {
     ThreadMode threadMode() default ThreadMode.POSTING;
 
-    ActionMode actionMode() default ActionMode.SUBSCRIBE;
+    ActionMode actionMode() default ActionMode.EAGER_SUBSCRIBE;
 
     /**
      * If true, delivers the most recent sticky event (posted with

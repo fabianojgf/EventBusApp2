@@ -15,6 +15,8 @@
  */
 package org.greenrobot.eventbus.annotationprocessor;
 
+import static net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.AGGREGATING;
+
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor;
 
 import org.greenrobot.eventbus.ExceptionalThreadMode;
@@ -50,9 +52,6 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
 import de.greenrobot.common.ListMap;
-
-
-import static net.ltgt.gradle.incap.IncrementalAnnotationProcessorType.AGGREGATING;
 
 /**
  * Is an aggregating processor as it writes a single file, the subscriber index file,
@@ -332,7 +331,7 @@ public class EventBusAnnotationProcessor extends AbstractProcessor {
     }
 
     private void writeCreateHandlerMethods(BufferedWriter writer, List<ExecutableElement> methods,
-                                           String callPrefix, String myPackage) throws IOException {
+                                              String callPrefix, String myPackage) throws IOException {
         for (ExecutableElement method : methods) {
             List<? extends VariableElement> parameters = method.getParameters();
             TypeMirror paramType = getParamTypeMirror(parameters.get(0), null);

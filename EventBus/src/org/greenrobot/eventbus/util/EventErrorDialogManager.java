@@ -38,9 +38,9 @@ import org.greenrobot.eventbus.EventBus;
  * <li>Use one of {@link #attachTo(Activity)}, {@link #attachTo(Activity, boolean)} or
  * {@link #attachTo(Activity, boolean, Bundle)} in your Activity, typically in onCreate.</li>
  * </ol>
- *
+ * 
  * For more complex mappings, you can supply your own {@link ErrorDialogFragmentFactory}.
- *
+ * 
  * @author Markus
  */
 public class EventErrorDialogManager {
@@ -93,7 +93,7 @@ public class EventErrorDialogManager {
                 existingFragment.dismiss();
             }
 
-            android.support.v4.app.DialogFragment errorFragment = (android.support.v4.app.DialogFragment) factory
+            DialogFragment errorFragment = (DialogFragment) factory
                     .prepareErrorFragment(event, finishAfterDialog, argumentsForErrorDialog);
             if (errorFragment != null) {
                 errorFragment.show(fm, TAG_ERROR_DIALOG);
@@ -101,7 +101,7 @@ public class EventErrorDialogManager {
         }
 
         public static void attachTo(Activity activity, Object executionScope, boolean finishAfterDialog,
-                                    Bundle argumentsForErrorDialog) {
+                Bundle argumentsForErrorDialog) {
             FragmentManager fm = ((FragmentActivity) activity).getSupportFragmentManager();
             SupportManagerFragment fragment = (SupportManagerFragment) fm.findFragmentByTag(TAG_ERROR_DIALOG_MANAGER);
             if (fragment == null) {
@@ -201,7 +201,7 @@ public class EventErrorDialogManager {
         Object executionScope = activity.getClass();
         attachTo(activity, executionScope, finishAfterDialog, argumentsForErrorDialog);
     }
-
+    
     public static void attachTo(Activity activity, Object executionScope, boolean finishAfterDialog, Bundle argumentsForErrorDialog) {
         if (factory == null) {
             throw new RuntimeException("You must set the static factory field to configure error dialogs for your app.");
@@ -225,7 +225,7 @@ public class EventErrorDialogManager {
                 break;
             } else if (name.startsWith("com.actionbarsherlock.app")
                     && (name.endsWith(".SherlockActivity") || name.endsWith(".SherlockListActivity") || name
-                    .endsWith(".SherlockPreferenceActivity"))) {
+                            .endsWith(".SherlockPreferenceActivity"))) {
                 throw new RuntimeException("Please use SherlockFragmentActivity. Illegal activity: " + name);
             } else if (name.equals("android.app.Activity")) {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {

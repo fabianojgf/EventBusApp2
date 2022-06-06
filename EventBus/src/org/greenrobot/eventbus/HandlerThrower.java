@@ -21,7 +21,7 @@ import android.os.Message;
 import android.os.SystemClock;
 
 /**
- * @author Fabiano Gadelha
+ * @author ---
  */
 public class HandlerThrower extends Handler implements Thrower {
 

@@ -18,8 +18,8 @@ package org.greenrobot.eventbus;
 
 /**
  * Throws exceptional events in background.
- *
- * @author Fabiano Gadelha
+ * 
+ * @author ---
  */
 class AsyncThrower implements Runnable, Thrower {
 

@@ -18,7 +18,7 @@ package org.greenrobot.eventbus;
 /**
  * Throws exceptional events.
  *
- * @author Fabiano Gadelha
+ * @author ---
  */
 interface Thrower {
 

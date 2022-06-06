@@ -50,6 +50,7 @@ public class EventBusBuilder {
 
     boolean mappedClassesRegistrationPerformed = false;
 
+    boolean startMechanismEnabled = true;
     boolean ignoreGeneratedIndex;
     boolean strictMethodVerification;
     ExecutorService executorService = DEFAULT_EXECUTOR_SERVICE;
@@ -207,6 +208,12 @@ public class EventBusBuilder {
             skipMethodVerificationForClasses = new ArrayList<>();
         }
         skipMethodVerificationForClasses.add(clazz);
+        return this;
+    }
+
+    /** the start mechanism for services and activities (default: true). */
+    public EventBusBuilder startMechanismEnabled(boolean startMechanismEnabled) {
+        this.startMechanismEnabled = startMechanismEnabled;
         return this;
     }
 

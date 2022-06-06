@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 /**
  * Used internally by EventBus and generated handler indexes.
  *
- * @author Fabiano Gadelha
+ * @author ---
  */
 public class HandlerMethod {
     final Method method;

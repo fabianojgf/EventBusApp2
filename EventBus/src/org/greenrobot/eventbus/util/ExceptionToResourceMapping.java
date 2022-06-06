@@ -27,7 +27,7 @@ import java.util.logging.Level;
 
 /**
  * Maps throwables to texts for error dialogs. Use Config to configure the mapping.
- *
+ * 
  * @author Markus
  */
 public class ExceptionToResourceMapping {

@@ -60,7 +60,7 @@ public abstract class AbstractHandlerInfo implements HandlerInfo {
     }
 
     protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType) {
-        return createHandlerMethod(methodName, exceptionalEventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.HANDLE, 0, false);
+        return createHandlerMethod(methodName, exceptionalEventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.EAGER_HANDLE, 0, false);
     }
 
     protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {

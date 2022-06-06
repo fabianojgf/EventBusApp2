@@ -38,19 +38,18 @@ public class HandlerMethodInfo {
 
     public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode,
                              int priority, boolean sticky) {
-        this(methodName, eventType, threadMode, ExceptionalActionMode.HANDLE, priority, sticky);
+        this(methodName, eventType, threadMode, ExceptionalActionMode.EAGER_HANDLE, priority, sticky);
     }
 
     public HandlerMethodInfo(String methodName, Class<?> eventType) {
-        this(methodName, eventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.HANDLE,0, false);
+        this(methodName, eventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.EAGER_HANDLE,0, false);
     }
 
     public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode) {
-        this(methodName, eventType, threadMode, ExceptionalActionMode.HANDLE,0, false);
+        this(methodName, eventType, threadMode, ExceptionalActionMode.EAGER_HANDLE,0, false);
     }
 
     public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {
         this(methodName, eventType, threadMode, actionMode,0, false);
     }
-
 }

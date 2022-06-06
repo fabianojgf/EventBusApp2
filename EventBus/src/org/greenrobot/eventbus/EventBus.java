@@ -71,7 +71,7 @@ public class EventBus {
     private final Map<Object, List<Class<?>>> typesByHandler;
     private final Map<Class<?>, Object> stickyExceptionalEvents;
 
-    private android.content.Context context;
+    private Context context;
 
     /**
      * Current Immediate Thread State.
@@ -145,6 +145,7 @@ public class EventBus {
     private final boolean exceptionalEventInheritance;
 
     private boolean mappedClassesRegistrationPerformed;
+    private boolean startMechanismEnabled;
 
     private final int indexCount;
     private final int indexCountSubscriber;
@@ -166,7 +167,7 @@ public class EventBus {
      * @param context
      * @return EventBus
      */
-    public static EventBus getDefault(android.content.Context context) {
+    public static EventBus getDefault(Context context) {
         EventBus instance = defaultInstance;
         if (instance == null) {
             synchronized (EventBus.class) {
@@ -209,11 +210,11 @@ public class EventBus {
 
     /**
      * Creates a new EventBus instance; each instance is a separate scope in which events are delivered.
-     * To use a central bus, consider {@link #getDefault(android.content.Context)}.
+     * To use a central bus, consider {@link #getDefault(Context)}.
      *
      * @param context
      */
-    public EventBus(android.content.Context context) {
+    public EventBus(Context context) {
         this(DEFAULT_BUILDER);
         this.context = context;
     }
@@ -274,6 +275,7 @@ public class EventBus {
         exceptionalEventInheritance = builder.exceptionalEventInheritance;
 
         mappedClassesRegistrationPerformed = builder.mappedClassesRegistrationPerformed;
+        startMechanismEnabled = builder.startMechanismEnabled;
     }
 
     /**
@@ -306,9 +308,12 @@ public class EventBus {
             }
         }
 
-        //Processes the thread that sends the messages that are in the late queue.
-        PostingThreadState latePostingState = currentLatePostingThreadState.get();
-        processPostingThread(subscriber, latePostingState);
+        if(startMechanismEnabled && isSubscriberMappedForActionMode(
+                subscriberClass, ActionMode.LAZY_SUBSCRIBE)) {
+            //Processes the thread that sends the messages that are in the late queue.
+            PostingThreadState latePostingState = currentLatePostingThreadState.get();
+            processPostingThread(subscriber, latePostingState);
+        }
     }
 
     /**
@@ -330,9 +335,12 @@ public class EventBus {
             }
         }
 
-        //Processes the thread that sends the messages that are in the late queue.
-        ThrowingThreadState lateThrowingState = currentLateThrowingThreadState.get();
-        processThrowingThread(handler, lateThrowingState);
+        if(startMechanismEnabled && isHandlerMappedForExceptionalActionMode(
+                handlerClass, ExceptionalActionMode.LAZY_HANDLE)) {
+            //Processes the thread that sends the messages that are in the late queue.
+            ThrowingThreadState lateThrowingState = currentLateThrowingThreadState.get();
+            processThrowingThread(handler, lateThrowingState);
+        }
     }
 
     /**
@@ -697,11 +705,13 @@ public class EventBus {
      */
     public void post(Object event) {
         synchronized (event) {
-            //Register classes with methods mapped as subscribe or handle.
-            try {
-                registerMappedClasses();
-            } catch(NoClassDefFoundError e) {
-                //At the moment, do nothing.
+            if(startMechanismEnabled) {
+                //Register classes with methods mapped as subscribe or handle.
+                try {
+                    registerMappedClasses();
+                } catch (NoClassDefFoundError e) {
+                    //At the moment, do nothing.
+                }
             }
 
             //Put exceptional events in immediate queue.
@@ -711,12 +721,15 @@ public class EventBus {
             //Processes the thread that sends the messages that are in the immediate queue.
             processPostingThread(immediatePostingState);
 
-            //Put events in late queue.
-            PostingThreadState latePostingState = currentLatePostingThreadState.get();
-            putEventInPostingQueue(latePostingState, event);
+            if(startMechanismEnabled && isEventMappedForActionMode(
+                    event, ActionMode.LAZY_SUBSCRIBE)) {
+                //Put events in late queue.
+                PostingThreadState latePostingState = currentLatePostingThreadState.get();
+                putEventInPostingQueue(latePostingState, event);
 
-            //Prepare to start the activities that will receive the events of the late queue.
-            prepareLatePostingEvent(event);
+                //Prepare to start the activities that will receive the events of the late queue.
+                prepareLatePostingEvent(event);
+            }
         }
     }
 
@@ -727,11 +740,13 @@ public class EventBus {
      */
     public void throwException(Object exceptionalEvent) {
         synchronized (exceptionalEvent) {
-            //Register classes with methods mapped as subscribe or handle.
-            try {
-                registerMappedClasses();
-            } catch(NoClassDefFoundError e) {
-                //At the moment, do nothing.
+            if(startMechanismEnabled) {
+                //Register classes with methods mapped as subscribe or handle.
+                try {
+                    registerMappedClasses();
+                } catch (NoClassDefFoundError e) {
+                    //At the moment, do nothing.
+                }
             }
 
             //Put exceptional events in immediate queue.
@@ -741,12 +756,15 @@ public class EventBus {
             //Processes the thread that sends the messages that are in the immediate queue.
             processThrowingThread(immediateThrowingState);
 
-            //Put exceptional events in late queue.
-            ThrowingThreadState lateThrowingState = currentLateThrowingThreadState.get();
-            putExceptionalEventInThrowingQueue(lateThrowingState, exceptionalEvent);
+            if(startMechanismEnabled && isExceptionalEventMappedForExceptionalActionMode(
+                    exceptionalEvent, ExceptionalActionMode.LAZY_HANDLE)) {
+                //Put exceptional events in late queue.
+                ThrowingThreadState lateThrowingState = currentLateThrowingThreadState.get();
+                putExceptionalEventInThrowingQueue(lateThrowingState, exceptionalEvent);
 
-            //Prepare to start the activities that will receive the exceptional events of the late queue.
-            prepareLateThrowingExceptionalEvent(exceptionalEvent);
+                //Prepare to start the activities that will receive the exceptional events of the late queue.
+                prepareLateThrowingExceptionalEvent(exceptionalEvent);
+            }
         }
     }
 
@@ -827,37 +845,9 @@ public class EventBus {
                 String s = iter.nextElement();
                 if (s.contains(context.getPackageName())) {
                     //System.out.println("ClasseDex: " + s);
-
                     try {
                         Class<?> classInPackage = Class.forName(s);
-
-                        boolean hasSubscriberMethods = subscriberMethodFinder.hasSubscriberMethods(classInPackage);
-                        boolean hasHandlerMethods = handlerMethodFinder.hasHandlerMethods(classInPackage);
-
-                        //Register classes that contains methods mapped with the @Subscribe annotation.
-                        if(hasSubscriberMethods) {
-                            List<SubscriberMethod> subscriberMethods = subscriberMethodFinder.findSubscriberMethods(classInPackage);
-                            synchronized (this) {
-                                for (SubscriberMethod subscriberMethod : subscriberMethods) {
-                                    subscribeClass(classInPackage, subscriberMethod);
-                                }
-                            }
-                        }
-
-                        //Register classes that contains methods mapped with the @Handle annotation.
-                        if(hasHandlerMethods) {
-                            List<HandlerMethod> handlerMethods = handlerMethodFinder.findHandlerMethods(classInPackage);
-                            synchronized (this) {
-                                for (HandlerMethod handlerMethod : handlerMethods) {
-                                    handleClass(classInPackage, handlerMethod);
-                                }
-                            }
-                        }
-                        /*
-                        if(hasSubscriberMethods || hasHandlerMethods) {
-                            System.out.println("REGISTERED: MappedClass [ " + classInPackage.getName() + "]");
-                        }
-                        */
+                        registerMappedClass(classInPackage);
                     } catch (ClassNotFoundException ex) {
                         ex.printStackTrace();
                     }
@@ -866,6 +856,40 @@ public class EventBus {
         } catch (IOException e1) {
             e1.printStackTrace();
         }
+    }
+
+    /**
+     * Analyzes and stores data from a specific class that have mapped methods to perform
+     * the processing of common events or exceptional events.
+     */
+    public void registerMappedClass(Class<?> classToMap) {
+        boolean hasSubscriberMethods = subscriberMethodFinder.hasSubscriberMethods(classToMap);
+        boolean hasHandlerMethods = handlerMethodFinder.hasHandlerMethods(classToMap);
+
+        //Register classes that contains methods mapped with the @Subscribe annotation.
+        if(hasSubscriberMethods) {
+            List<SubscriberMethod> subscriberMethods = subscriberMethodFinder.findSubscriberMethods(classToMap);
+            synchronized (this) {
+                for (SubscriberMethod subscriberMethod : subscriberMethods) {
+                    subscribeClass(classToMap, subscriberMethod);
+                }
+            }
+        }
+
+        //Register classes that contains methods mapped with the @Handle annotation.
+        if(hasHandlerMethods) {
+            List<HandlerMethod> handlerMethods = handlerMethodFinder.findHandlerMethods(classToMap);
+            synchronized (this) {
+                for (HandlerMethod handlerMethod : handlerMethods) {
+                    handleClass(classToMap, handlerMethod);
+                }
+            }
+        }
+        /*
+        if(hasSubscriberMethods || hasHandlerMethods) {
+            System.out.println("REGISTERED: MappedClass [ " + classInPackage.getName() + "]");
+        }
+        */
     }
 
     /**
@@ -1944,7 +1968,7 @@ public class EventBus {
      *
      * This method aims to ensure that, if the subscriber object is activity, they will be started so that they receive the events.
      * For this, it is necessary that the subscriber method has the {@link Subscribe#actionMode} parameter of the  {@link Subscribe} annotation
-     * with the {@link ActionMode#START_AND_SUBSCRIBE} value.
+     * with the {@link ActionMode#LAZY_SUBSCRIBE} value.
      *
      * @param event
      * @param eventClass
@@ -1957,9 +1981,9 @@ public class EventBus {
         }
         if (subscriberClasses != null && !subscriberClasses.isEmpty()) {
             for (SubscriberClass subscriberClass : subscriberClasses) {
-                if(subscriberClass.subscriberMethod.actionMode == ActionMode.START_AND_SUBSCRIBE) {
+                if(subscriberClass.subscriberMethod.actionMode == ActionMode.LAZY_SUBSCRIBE) {
                     Class<?> subscriberClassType = subscriberClass.subscriberClass;
-                    if(ActionMode.isTypeEnableFor(subscriberClassType, ActionMode.START_AND_SUBSCRIBE)) {
+                    if(ActionMode.isTypeEnableFor(subscriberClassType, ActionMode.LAZY_SUBSCRIBE)) {
                         if(Activity.class.isAssignableFrom(subscriberClassType)) {
                             Intent intent = new Intent(context, subscriberClassType);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -1986,7 +2010,7 @@ public class EventBus {
      *
      * This method aims to ensure that, if the handler object is activity, they will be started so that they receive the exceptional events.
      * For this, it is necessary that the handler method has the {@link Handle#actionMode} parameter of the  {@link Handle} annotation
-     * with the {@link ExceptionalActionMode#START_AND_HANDLE} value.
+     * with the {@link ExceptionalActionMode#LAZY_HANDLE} value.
      *
      * @param exceptionalEvent
      * @param exceptionalEventClass
@@ -1999,9 +2023,9 @@ public class EventBus {
         }
         if (handlerClasses != null && !handlerClasses.isEmpty()) {
             for (HandlerClass handlerClass : handlerClasses) {
-                if(handlerClass.handlerMethod.actionMode == ExceptionalActionMode.START_AND_HANDLE) {
+                if(handlerClass.handlerMethod.actionMode == ExceptionalActionMode.LAZY_HANDLE) {
                     Class<?> handlerClassType = handlerClass.handlerClass;
-                    if(ExceptionalActionMode.isTypeEnableFor(handlerClassType, ExceptionalActionMode.START_AND_HANDLE)) {
+                    if(ExceptionalActionMode.isTypeEnableFor(handlerClassType, ExceptionalActionMode.LAZY_HANDLE)) {
                         if(Activity.class.isAssignableFrom(handlerClassType)) {
                             Intent intent = new Intent(context, handlerClassType);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -2018,6 +2042,92 @@ public class EventBus {
                 }
             }
             return true;
+        }
+        return false;
+    }
+
+    private boolean isSubscriberMappedForActionMode(Class<?> subscriberClass, ActionMode actionMode) {
+        if(!ActionMode.isTypeEnableFor(subscriberClass, actionMode))
+            return false;
+
+        List<SubscriberMethod> subscriberMethods = subscriberMethodFinder.findSubscriberMethods(subscriberClass);
+        for(SubscriberMethod m : subscriberMethods) {
+            if(m.actionMode.equals(actionMode))
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isHandlerMappedForExceptionalActionMode(Class<?> handlerClass, ExceptionalActionMode exceptionalActionMode) {
+        if(!ExceptionalActionMode.isTypeEnableFor(handlerClass, exceptionalActionMode))
+            return false;
+
+        List<HandlerMethod> handlerMethods = handlerMethodFinder.findHandlerMethods(handlerClass);
+        for(HandlerMethod h : handlerMethods) {
+            if(h.actionMode.equals(exceptionalActionMode))
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isEventMappedForActionMode(Object event, ActionMode actionMode) {
+        Class<?> eventClass = event.getClass();
+        boolean eventTypeMapped = false;
+        if (eventInheritance) {
+            List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);
+            int countTypes = eventTypes.size();
+            for (int h = 0; h < countTypes && !eventTypeMapped; h++) {
+                Class<?> clazz = eventTypes.get(h);
+                eventTypeMapped |= isEventTypeMappedForActionMode(clazz, actionMode);
+            }
+        } else {
+            eventTypeMapped = isEventTypeMappedForActionMode(eventClass, actionMode);
+        }
+
+        return eventTypeMapped;
+    }
+
+    private boolean isExceptionalEventMappedForExceptionalActionMode(Object exceptionalEvent, ExceptionalActionMode exceptionalActionMode) {
+        Class<?> exceptionalEventClass = exceptionalEvent.getClass();
+        boolean exceptionalEventTypeMapped = false;
+        if (exceptionalEventInheritance) {
+            List<Class<?>> exceptionalEventTypes = lookupAllExceptionalEventTypes(exceptionalEventClass);
+            int countTypes = exceptionalEventTypes.size();
+            for (int h = 0; h < countTypes && !exceptionalEventTypeMapped; h++) {
+                Class<?> clazz = exceptionalEventTypes.get(h);
+                exceptionalEventTypeMapped |= isExceptionalEventTypeMappedForExceptionalActionMode(clazz, exceptionalActionMode);
+            }
+        } else {
+            exceptionalEventTypeMapped = isExceptionalEventTypeMappedForExceptionalActionMode(exceptionalEventClass, exceptionalActionMode);
+        }
+
+        return exceptionalEventTypeMapped;
+    }
+
+    private boolean isEventTypeMappedForActionMode(Class<?> eventClass, ActionMode actionMode) {
+        CopyOnWriteArrayList<SubscriberClass> subscriberClasses =
+                mappedSubscriberClassesByEventType.get(eventClass);
+        if (subscriberClasses != null && !subscriberClasses.isEmpty()) {
+            for (SubscriberClass subscriberClass : subscriberClasses) {
+                if (ActionMode.isTypeEnableFor(subscriberClass.subscriberClass, actionMode)
+                        && subscriberClass.subscriberMethod.actionMode == actionMode) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isExceptionalEventTypeMappedForExceptionalActionMode(Class<?> exceptionalEventClass, ExceptionalActionMode exceptionalActionMode) {
+        CopyOnWriteArrayList<HandlerClass> handlerClasses =
+                mappedHandlerClassesByExceptionalEventType.get(exceptionalEventClass);
+        if (handlerClasses != null && !handlerClasses.isEmpty()) {
+            for (HandlerClass handlerClass : handlerClasses) {
+                if (ExceptionalActionMode.isTypeEnableFor(handlerClass.handlerClass, exceptionalActionMode)
+                        && handlerClass.handlerMethod.actionMode == exceptionalActionMode) {
+                    return true;
+                }
+            }
         }
         return false;
     }

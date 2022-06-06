@@ -48,7 +48,7 @@ public class SecondActivity extends AppCompatActivity {
         //EventBus.getDefault(this).unregisterHandler(this);
     }
 
-    @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.START_AND_HANDLE)
+    @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.LAZY_HANDLE)
     public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->SecondActivity: onExceptionEvent");

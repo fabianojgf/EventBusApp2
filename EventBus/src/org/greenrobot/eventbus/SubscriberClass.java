@@ -16,7 +16,7 @@
 package org.greenrobot.eventbus;
 
 /**
- * @author Fabiano Gadelha
+ * @author ---
  */
 final class SubscriberClass {
     final Class<?> subscriberClass;

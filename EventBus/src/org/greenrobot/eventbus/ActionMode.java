@@ -22,19 +22,19 @@ import android.app.Service;
  * Each subscriber method has a action mode, which determines what
  * type of action will be taken to execute the method.
  *
- * @author Fabiano Gadelha
+ * @author ---
  */
 public enum ActionMode {
     /**
      * This is default action, in which the method will receive the invocation and will be executed.
-     * However, the method will only be executed if the class instance is registered.
+     * However, the method will only be executed if the class instance is registered. (Eager Delivery)
      */
-    SUBSCRIBE,
+    EAGER_SUBSCRIBE,
     /**
      * This action causes the method to receive the invocation to be executed, even if there is no instance
-     * of the registered class. This action ensures that the class is initialized so that the method is executed.
+     * of the registered class. This action ensures that the class is initialized so that the method is executed. (Lazy Delivery)
      */
-    START_AND_SUBSCRIBE;
+    LAZY_SUBSCRIBE;
 
     /**
      * Checks if the type is enabled to use the informed action mode.
@@ -44,9 +44,9 @@ public enum ActionMode {
      * @return
      */
     public static boolean isTypeEnableFor(Class<?> type, ActionMode actionMode) {
-        if(actionMode.equals(SUBSCRIBE))
+        if(actionMode.equals(EAGER_SUBSCRIBE))
             return true;
-        else if(actionMode.equals(START_AND_SUBSCRIBE)) {
+        else if(actionMode.equals(LAZY_SUBSCRIBE)) {
             return Activity.class.isAssignableFrom(type)
                     || Service.class.isAssignableFrom(type);
         }
