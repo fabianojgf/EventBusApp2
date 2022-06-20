@@ -6,6 +6,8 @@ version = '3.2.0'
 sourceCompatibility = 1.7
 
 dependencies {
+    implementation files('lib\\ExpressionEvaluator.jar')
+
     compileOnly 'com.google.android:android:4.1.1.4'
     compileOnly 'com.google.android:android-test:4.1.1.4'
     compileOnly 'com.google.android:annotations:4.1.1.4'
