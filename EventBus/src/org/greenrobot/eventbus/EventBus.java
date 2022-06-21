@@ -58,19 +58,16 @@ public class EventBus {
 
     static final EventBusBuilder DEFAULT_BUILDER = new EventBusBuilder();
 
-    private Context context;
-
     private final MainThreadSupport mainThreadSupport;
     private final ExecutorService executorService;
+    private final Logger logger;
+    private final int indexCount;
+    private final RegularBus regularBus;
+    private final ExceptionalBus exceptionalBus;
 
     private boolean mappedClassesRegistrationPerformed;
     private boolean startMechanismEnabled;
-
-    private final int indexCount;
-    private final Logger logger;
-
-    private RegularBus regularBus;
-    private ExceptionalBus exceptionalBus;
+    private Context context;
 
     /**
      * Convenience singleton for apps using a process-wide EventBus instance.
@@ -142,16 +139,14 @@ public class EventBus {
      * @param builder
      */
     EventBus(EventBusBuilder builder) {
+        mainThreadSupport = builder.getMainThreadSupport();
+        executorService = builder.executorService;
         logger = builder.getLogger();
 
         regularBus = new RegularBus(this, builder.regularBusBuilder);
         exceptionalBus = new ExceptionalBus(this, builder.exceptionalBusBuilder);
-
-        mainThreadSupport = builder.getMainThreadSupport();
-
         indexCount = 0;
 
-        executorService = builder.executorService;
         mappedClassesRegistrationPerformed = builder.mappedClassesRegistrationPerformed;
         startMechanismEnabled = builder.startMechanismEnabled;
     }
