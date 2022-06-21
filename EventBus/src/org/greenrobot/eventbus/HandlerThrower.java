@@ -67,7 +67,7 @@ public class HandlerThrower extends Handler implements Thrower {
                         }
                     }
                 }
-                eventBus.invokeHandler(pendingThrow);
+                eventBus.getExceptionalBus().invokeHandler(pendingThrow);
                 long timeInMethod = SystemClock.uptimeMillis() - started;
                 if (timeInMethod >= maxMillisInsideHandleMessage) {
                     if (!sendMessage(obtainMessage())) {

@@ -61,7 +61,7 @@ final class BackgroundThrower implements Runnable, Thrower {
                             }
                         }
                     }
-                    eventBus.invokeHandler(pendingThrow);
+                    eventBus.getExceptionalBus().invokeHandler(pendingThrow);
                 }
             } catch (InterruptedException e) {
                 eventBus.getLogger().log(Level.WARNING, Thread.currentThread().getName() + " was interruppted", e);

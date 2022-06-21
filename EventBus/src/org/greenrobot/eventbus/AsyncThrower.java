@@ -43,7 +43,7 @@ class AsyncThrower implements Runnable, Thrower {
         if(pendingThrow == null) {
             throw new IllegalStateException("No pending throw available");
         }
-        eventBus.invokeHandler(pendingThrow);
+        eventBus.getExceptionalBus().invokeHandler(pendingThrow);
     }
 
 }

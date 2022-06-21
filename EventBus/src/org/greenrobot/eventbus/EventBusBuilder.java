@@ -34,19 +34,8 @@ import java.util.concurrent.Executors;
 public class EventBusBuilder {
     private final static ExecutorService DEFAULT_EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
-    boolean logSubscriberExceptions = true;
-    boolean logNoSubscriberMessages = true;
-    boolean sendSubscriberExceptionEvent = true;
-    boolean sendNoSubscriberEvent = true;
-    boolean throwSubscriberException;
-    boolean eventInheritance = true;
-
-    boolean logHandlerExceptions = true;
-    boolean logNoHandlerMessages = true;
-    boolean sendHandlerExceptionExceptionalEvent = true;
-    boolean sendNoHandlerExceptionalEvent = true;
-    boolean throwHandlerException;
-    boolean exceptionalEventInheritance = true;
+    RegularBusBuilder regularBusBuilder = new RegularBusBuilder(this);
+    ExceptionalBusBuilder exceptionalBusBuilder = new ExceptionalBusBuilder(this);
 
     boolean mappedClassesRegistrationPerformed = false;
 
@@ -55,129 +44,11 @@ public class EventBusBuilder {
     boolean strictMethodVerification;
     ExecutorService executorService = DEFAULT_EXECUTOR_SERVICE;
     List<Class<?>> skipMethodVerificationForClasses;
-    List<SubscriberInfoIndex> subscriberInfoIndexes;
-    List<HandlerInfoIndex> handlerInfoIndexes;
     Logger logger;
     MainThreadSupport mainThreadSupport;
 
     EventBusBuilder() {
     }
-
-    /*
-
-      SUBSCRIBERS
-
-     */
-
-    /** Default: true */
-    public EventBusBuilder logSubscriberExceptions(boolean logSubscriberExceptions) {
-        this.logSubscriberExceptions = logSubscriberExceptions;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder logNoSubscriberMessages(boolean logNoSubscriberMessages) {
-        this.logNoSubscriberMessages = logNoSubscriberMessages;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder sendSubscriberExceptionEvent(boolean sendSubscriberExceptionEvent) {
-        this.sendSubscriberExceptionEvent = sendSubscriberExceptionEvent;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder sendNoSubscriberEvent(boolean sendNoSubscriberEvent) {
-        this.sendNoSubscriberEvent = sendNoSubscriberEvent;
-        return this;
-    }
-
-    /**
-     * Fails if an subscriber throws an exception (default: false).
-     * <p/>
-     * Tip: Use this with BuildConfig.DEBUG to let the app crash in DEBUG mode (only). This way, you won't miss
-     * exceptions during development.
-     */
-    public EventBusBuilder throwSubscriberException(boolean throwSubscriberException) {
-        this.throwSubscriberException = throwSubscriberException;
-        return this;
-    }
-
-    /**
-     * By default, EventBus considers the event class hierarchy (subscribers to super classes will be notified).
-     * Switching this feature off will improve posting of events. For simple event classes extending Object directly,
-     * we measured a speed up of 20% for event posting. For more complex event hierarchies, the speed up should be
-     * greater than 20%.
-     * <p/>
-     * However, keep in mind that event posting usually consumes just a small proportion of CPU time inside an app,
-     * unless it is posting at high rates, e.g. hundreds/thousands of events per second.
-     */
-    public EventBusBuilder eventInheritance(boolean eventInheritance) {
-        this.eventInheritance = eventInheritance;
-        return this;
-    }
-
-    /*
-     *
-     * HANDLERS
-     *
-     */
-
-    /** Default: true */
-    public EventBusBuilder logHandlerExceptions(boolean logHandlerExceptions) {
-        this.logHandlerExceptions = logHandlerExceptions;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder logNoHandlerMessages(boolean logNoHandlerMessages) {
-        this.logNoHandlerMessages = logNoHandlerMessages;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder sendHandlerExceptionExceptionalEvent(boolean sendHandlerExceptionExceptionalEvent) {
-        this.sendHandlerExceptionExceptionalEvent = sendHandlerExceptionExceptionalEvent;
-        return this;
-    }
-
-    /** Default: true */
-    public EventBusBuilder sendNoHandlerExceptionalEvent(boolean sendNoHandlerExceptionalEvent) {
-        this.sendNoHandlerExceptionalEvent = sendNoHandlerExceptionalEvent;
-        return this;
-    }
-
-    /**
-     * Fails if an handler throws an exception (default: false).
-     * <p/>
-     * Tip: Use this with BuildConfig.DEBUG to let the app crash in DEBUG mode (only). This way, you won't miss
-     * exceptions during development.
-     */
-    public EventBusBuilder throwHandlerException(boolean throwHandlerException) {
-        this.throwHandlerException = throwHandlerException;
-        return this;
-    }
-
-    /**
-     * By default, EventBus considers the exceptional event class hierarchy (handlers to super classes will be notified).
-     * Switching this feature off will improve throwing of exceptional events. For simple exceptional event classes extending Object directly,
-     * we measured a speed up of 20% for exceptional event throwing. For more complex event hierarchies, the speed up should be
-     * greater than 20%.
-     * <p/>
-     * However, keep in mind that exceptional event throwing usually consumes just a small proportion of CPU time inside an app,
-     * unless it is throwing at high rates, e.g. hundreds/thousands of exceptional events per second.
-     */
-    public EventBusBuilder exceptionalEventInheritance(boolean exceptionalEventInheritance) {
-        this.exceptionalEventInheritance = exceptionalEventInheritance;
-        return this;
-    }
-
-    /*
-     *
-     * GENERAL
-     *
-     */
 
     /**
      * By default, EventBus considers that the registration of classes with methods for subscribe  or handle was not carried out.
@@ -226,24 +97,6 @@ public class EventBusBuilder {
     /** Enables strict method verification (default: false). */
     public EventBusBuilder strictMethodVerification(boolean strictMethodVerification) {
         this.strictMethodVerification = strictMethodVerification;
-        return this;
-    }
-
-    /** Adds an index generated by EventBus' annotation preprocessor. */
-    public EventBusBuilder addIndex(SubscriberInfoIndex index) {
-        if (subscriberInfoIndexes == null) {
-            subscriberInfoIndexes = new ArrayList<>();
-        }
-        subscriberInfoIndexes.add(index);
-        return this;
-    }
-
-    /** Adds an index generated by EventBus' annotation preprocessor. */
-    public EventBusBuilder addIndex(HandlerInfoIndex index) {
-        if (handlerInfoIndexes == null) {
-            handlerInfoIndexes = new ArrayList<>();
-        }
-        handlerInfoIndexes.add(index);
         return this;
     }
 

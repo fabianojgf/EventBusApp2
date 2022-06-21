@@ -64,7 +64,7 @@ public class HandlerPoster extends Handler implements Poster {
                         }
                     }
                 }
-                eventBus.invokeSubscriber(pendingPost);
+                eventBus.getRegularBus().invokeSubscriber(pendingPost);
                 long timeInMethod = SystemClock.uptimeMillis() - started;
                 if (timeInMethod >= maxMillisInsideHandleMessage) {
                     if (!sendMessage(obtainMessage())) {
