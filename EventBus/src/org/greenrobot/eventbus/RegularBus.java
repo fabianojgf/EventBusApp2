@@ -2,7 +2,6 @@ package org.greenrobot.eventbus;
 
 import android.app.Activity;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 
 import java.lang.reflect.InvocationTargetException;
@@ -66,7 +65,7 @@ public class RegularBus extends AbstractBus {
     private boolean sendNoSubscriberEvent;
     private boolean eventInheritance;
 
-    private int indexCountSubscriber;
+    private int indexCount;
 
     /**
      * Creates a new EventBus instance; each instance is a separate scope in which events are delivered.
@@ -89,7 +88,7 @@ public class RegularBus extends AbstractBus {
         backgroundPoster = new BackgroundPoster(getEventBus());
         asyncPoster = new AsyncPoster(getEventBus());
 
-        indexCountSubscriber = builder.subscriberInfoIndexes != null
+        indexCount = builder.subscriberInfoIndexes != null
                 ? builder.subscriberInfoIndexes.size() : 0;
 
         subscriberMethodFinder = new SubscriberMethodFinder(builder.subscriberInfoIndexes,
@@ -868,6 +867,14 @@ public class RegularBus extends AbstractBus {
         return mappedSubscriberClassesByEventType;
     }
 
+    public RegularBusQuerier getQuerier() {
+        return querier;
+    }
+
+    public int getIndexCount() {
+        return indexCount;
+    }
+
     /**
      * Just an idea: we could provide a callback to post() to be notified, an alternative would be events, of course...
      */
@@ -877,7 +884,7 @@ public class RegularBus extends AbstractBus {
 
     @Override
     public String toString() {
-        return "RegularBus[indexCountSubscriber=" + indexCountSubscriber
+        return "RegularBus[indexCountSubscriber=" + indexCount
                 + ", eventInheritance=" + eventInheritance + "]";
     }
 }

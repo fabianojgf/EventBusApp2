@@ -59,7 +59,7 @@ public class ExceptionalBus extends AbstractBus {
     private boolean sendNoHandlerExceptionalEvent;
     private boolean exceptionalEventInheritance;
 
-    private int indexCountHandler;
+    private int indexCount;
 
     /**
      * Creates a new EventBus instance; each instance is a separate scope in which events are delivered.
@@ -81,7 +81,7 @@ public class ExceptionalBus extends AbstractBus {
         backgroundThrower = new BackgroundThrower(getEventBus());
         asyncThrower = new AsyncThrower(getEventBus());
 
-        indexCountHandler = builder.handlerInfoIndexes != null
+        indexCount = builder.handlerInfoIndexes != null
                 ? builder.handlerInfoIndexes.size() : 0;
 
         handlerMethodFinder = new HandlerMethodFinder(builder.handlerInfoIndexes,
@@ -860,6 +860,14 @@ public class ExceptionalBus extends AbstractBus {
         return mappedHandlerClassesByExceptionalEventType;
     }
 
+    public ExceptionalBusQuerier getQuerier() {
+        return querier;
+    }
+
+    public int getIndexCount() {
+        return indexCount;
+    }
+
     /**
      * Just an idea: we could provide a callback to throws() to be notified, an alternative would be exceptional events, of course...
      */
@@ -869,7 +877,7 @@ public class ExceptionalBus extends AbstractBus {
 
     @Override
     public String toString() {
-        return "ExceptionalBus[indexCountHandler=" + indexCountHandler
+        return "ExceptionalBus[indexCountHandler=" + indexCount
                 + ", exceptionalEventInheritance=" + exceptionalEventInheritance + "]";
     }
 }

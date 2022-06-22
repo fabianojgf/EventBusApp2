@@ -16,24 +16,11 @@
 package org.greenrobot.eventbus;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.logging.Level;
 
 import dalvik.system.DexFile;
 
@@ -145,7 +132,7 @@ public class EventBus {
 
         regularBus = new RegularBus(this, builder.regularBusBuilder);
         exceptionalBus = new ExceptionalBus(this, builder.exceptionalBusBuilder);
-        indexCount = 0;
+        indexCount = regularBus.getIndexCount() + exceptionalBus.getIndexCount();
 
         mappedClassesRegistrationPerformed = builder.mappedClassesRegistrationPerformed;
         startMechanismEnabled = builder.startMechanismEnabled;

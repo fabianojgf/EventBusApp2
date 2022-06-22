@@ -100,6 +100,80 @@ public class EventBusBuilder {
         return this;
     }
 
+    /** RegularBusBuilder */
+
+    public EventBusBuilder logSubscriberExceptions(boolean logSubscriberExceptions) {
+        regularBusBuilder.logSubscriberExceptions(logSubscriberExceptions);
+        return this;
+    }
+
+    public EventBusBuilder logNoSubscriberMessages(boolean logNoSubscriberMessages) {
+        regularBusBuilder.logNoSubscriberMessages(logNoSubscriberMessages);
+        return this;
+    }
+
+    public EventBusBuilder sendSubscriberExceptionEvent(boolean sendSubscriberExceptionEvent) {
+        regularBusBuilder.sendSubscriberExceptionEvent(sendSubscriberExceptionEvent);
+        return this;
+    }
+
+    public EventBusBuilder sendNoSubscriberEvent(boolean sendNoSubscriberEvent) {
+        regularBusBuilder.sendNoSubscriberEvent(sendNoSubscriberEvent);
+        return this;
+    }
+
+    public EventBusBuilder throwSubscriberException(boolean throwSubscriberException) {
+        regularBusBuilder.throwSubscriberException(throwSubscriberException);
+        return this;
+    }
+
+    public EventBusBuilder eventInheritance(boolean eventInheritance) {
+        regularBusBuilder.eventInheritance(eventInheritance);
+        return this;
+    }
+
+    public EventBusBuilder addIndex(SubscriberInfoIndex index) {
+        regularBusBuilder.addIndex(index);
+        return this;
+    }
+
+    /** ExceptionalBusBuilder */
+
+    public EventBusBuilder logHandlerExceptions(boolean logHandlerExceptions) {
+        exceptionalBusBuilder.logHandlerExceptions(logHandlerExceptions);
+        return this;
+    }
+
+    public EventBusBuilder logNoHandlerMessages(boolean logNoHandlerMessages) {
+        exceptionalBusBuilder.logNoHandlerMessages(logNoHandlerMessages);
+        return this;
+    }
+
+    public EventBusBuilder sendHandlerExceptionExceptionalEvent(boolean sendHandlerExceptionExceptionalEvent) {
+        exceptionalBusBuilder.sendHandlerExceptionExceptionalEvent(sendHandlerExceptionExceptionalEvent);
+        return this;
+    }
+
+    public EventBusBuilder sendNoHandlerExceptionalEvent(boolean sendNoHandlerExceptionalEvent) {
+        exceptionalBusBuilder.sendNoHandlerExceptionalEvent(sendNoHandlerExceptionalEvent);
+        return this;
+    }
+
+    public EventBusBuilder throwHandlerException(boolean throwHandlerException) {
+        exceptionalBusBuilder.throwHandlerException(throwHandlerException);
+        return this;
+    }
+
+    public EventBusBuilder exceptionalEventInheritance(boolean exceptionalEventInheritance) {
+        exceptionalBusBuilder.exceptionalEventInheritance(exceptionalEventInheritance);
+        return this;
+    }
+
+    public EventBusBuilder addIndex(HandlerInfoIndex index) {
+        exceptionalBusBuilder.addIndex(index);
+        return this;
+    }
+
     /**
      * Set a specific log handler for all EventBus logging.
      * <p/>
@@ -155,6 +229,14 @@ public class EventBusBuilder {
             EventBus.defaultInstance = build();
             return EventBus.defaultInstance;
         }
+    }
+
+    public RegularBusBuilder getRegularBusBuilder() {
+        return regularBusBuilder;
+    }
+
+    public ExceptionalBusBuilder getExceptionalBusBuilder() {
+        return exceptionalBusBuilder;
     }
 
     /** Builds an EventBus based on the current configuration. */
