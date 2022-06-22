@@ -15,6 +15,8 @@
  */
 package org.greenrobot.eventbus;
 
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
+
 import java.lang.reflect.Method;
 
 /**
@@ -24,19 +26,35 @@ import java.lang.reflect.Method;
  */
 public class HandlerMethod {
     final Method method;
+    final Class<?> exceptionalEventType;
     final ExceptionalThreadMode threadMode;
     final ExceptionalActionMode actionMode;
-    final Class<?> exceptionalEventType;
+    final Class<? extends ExpectedScopeData> expectedScopeClass;
     final int priority;
     final boolean sticky;
     /** Used for efficient comparison */
     String methodString;
 
-    public HandlerMethod(Method method, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode, int priority, boolean sticky) {
+    public HandlerMethod(Method method, Class<?> exceptionalEventType,
+                         ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+                         int priority, boolean sticky) {
         this.method = method;
-        this.threadMode = threadMode;
         this.exceptionalEventType = exceptionalEventType;
+        this.threadMode = threadMode;
         this.actionMode = actionMode;
+        this.expectedScopeClass = null;
+        this.priority = priority;
+        this.sticky = sticky;
+    }
+
+    public HandlerMethod(Method method, Class<?> exceptionalEventType,
+                         ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+                         Class<? extends ExpectedScopeData> expectedScopeClass, int priority, boolean sticky) {
+        this.method = method;
+        this.exceptionalEventType = exceptionalEventType;
+        this.threadMode = threadMode;
+        this.actionMode = actionMode;
+        this.expectedScopeClass = expectedScopeClass;
         this.priority = priority;
         this.sticky = sticky;
     }

@@ -19,6 +19,7 @@ import org.greenrobot.eventbus.EventBusException;
 import org.greenrobot.eventbus.ExceptionalActionMode;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
 import org.greenrobot.eventbus.HandlerMethod;
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
 
 import java.lang.reflect.Method;
 
@@ -59,19 +60,18 @@ public abstract class AbstractHandlerInfo implements HandlerInfo {
         return shouldCheckSuperclass;
     }
 
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType) {
-        return createHandlerMethod(methodName, exceptionalEventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.EAGER_HANDLE, 0, false);
-    }
-
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {
-        return createHandlerMethod(methodName, exceptionalEventType, threadMode, actionMode, 0, false);
-    }
-
-    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType,
+                                                ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
                                                 int priority, boolean sticky) {
+        return createHandlerMethod(methodName, exceptionalEventType, threadMode, actionMode, null, 0, false);
+    }
+
+    protected HandlerMethod createHandlerMethod(String methodName, Class<?> exceptionalEventType,
+                                                ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+                                                Class<? extends ExpectedScopeData> expectedScopeClass, int priority, boolean sticky) {
         try {
             Method method = handlerClass.getDeclaredMethod(methodName, exceptionalEventType);
-            return new HandlerMethod(method, exceptionalEventType, threadMode, actionMode, priority, sticky);
+            return new HandlerMethod(method, exceptionalEventType, threadMode, actionMode, expectedScopeClass, priority, sticky);
         } catch (NoSuchMethodException e) {
             throw new EventBusException("Could not find handler method in " + handlerClass +
                     ". Maybe a missing ProGuard rule?", e);

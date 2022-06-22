@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
+import org.greenrobot.eventbus.parametric_scope.ScopeExceptionEvent;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -567,11 +570,12 @@ public class ExceptionalBus extends AbstractBus {
      * @param exceptionalEventClass
      * @return
      */
-    private boolean throwsSingleExceptionalEventForExceptionalEventType(Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<Handlement> handlements;
-        synchronized (this) {
-            handlements = handlementsByExceptionalEventType.get(exceptionalEventClass);
-        }
+    private boolean throwsSingleExceptionalEventForExceptionalEventType(
+            Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
+
+        CopyOnWriteArrayList<Handlement> handlements = getHandlementsForThrowingExceptionalEvent(
+                exceptionalEvent,exceptionalEventClass);
+
         if (handlements != null && !handlements.isEmpty()) {
             for (Handlement handlement : handlements) {
                 if(throwingState.isLate && handler != null && !handlement.handler.equals(handler))
@@ -595,6 +599,45 @@ public class ExceptionalBus extends AbstractBus {
             return true;
         }
         return false;
+    }
+
+    /**
+     *
+     * @param exceptionalEvent
+     * @param exceptionalEventClass
+     * @return
+     */
+    private CopyOnWriteArrayList<Handlement> getHandlementsForThrowingExceptionalEvent(
+            Object exceptionalEvent, Class<?> exceptionalEventClass) {
+        CopyOnWriteArrayList<Handlement> handlements;
+        synchronized (this) {
+            handlements = handlementsByExceptionalEventType.get(exceptionalEventClass);
+
+            /* If the exceptional event is of the parameterized scope type,
+              evaluate the handler selection based on the scope information. */
+            if(ScopeExceptionEvent.class.isAssignableFrom(exceptionalEvent.getClass())) {
+                ScopeExceptionEvent scopeExceptionEvent = (ScopeExceptionEvent) exceptionalEvent;
+
+                for (Handlement handlement : handlements) {
+                    Class<? extends ExpectedScopeData> expectedScopeClass =
+                            handlement.getHandlerMethod().expectedScopeClass;
+                    if (expectedScopeClass != null) {
+                        try {
+                            ExpectedScopeData expectedScopeData = expectedScopeClass.newInstance();
+                            if(!expectedScopeData.matched(scopeExceptionEvent.getScopeData())) {
+                                handlements.remove(handlement);
+                                continue;
+                            }
+                        } catch (InstantiationException e) {
+                            e.printStackTrace();
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        return handlements;
     }
 
     private Set<Class<?>> getMappedHandlerClassForExceptionalEvent(Object exceptionalEvent) {

@@ -17,6 +17,8 @@
 package org.greenrobot.eventbus;
 
 
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -33,6 +35,8 @@ public @interface Handle {
     ExceptionalThreadMode threadMode() default ExceptionalThreadMode.THROWING;
 
     ExceptionalActionMode actionMode() default ExceptionalActionMode.EAGER_HANDLE;
+
+    Class<? extends ExpectedScopeData> expectedScopeClass();
 
     /**
      * If true, delivers the most recent sticky exceptional event (throwed with

@@ -35,8 +35,9 @@ public class SimpleHandlerInfo extends AbstractHandlerInfo {
         HandlerMethod[] methods = new HandlerMethod[length];
         for (int i = 0; i < length; i++) {
             HandlerMethodInfo info = methodInfos[i];
-            methods[i] = createHandlerMethod(info.methodName, info.eventType, info.threadMode, info.actionMode,
-                    info.priority, info.sticky);
+            methods[i] = createHandlerMethod(info.methodName, info.eventType,
+                    info.threadMode, info.actionMode,
+                    info.expectedScopeClass, info.priority, info.sticky);
         }
         return methods;
     }

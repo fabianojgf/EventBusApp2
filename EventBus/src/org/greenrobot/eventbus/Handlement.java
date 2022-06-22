@@ -23,7 +23,7 @@ final class Handlement {
     final HandlerMethod handlerMethod;
     /**
      * Becomes false as soon as {@link EventBus#unregisterHandler(Object)} is called, which is checked by queued exceptional event delivery
-     * {@link EventBus#invokeHandler(PendingThrow)} to prevent race conditions.
+     * {@link ExceptionalBus#invokeHandler(PendingThrow)} to prevent race conditions.
      */
     volatile boolean active;
 
@@ -31,6 +31,14 @@ final class Handlement {
         this.handler = handler;
         this.handlerMethod = handlerMethod;
         active = true;
+    }
+
+    public Object getHandler() {
+        return handler;
+    }
+
+    public HandlerMethod getHandlerMethod() {
+        return handlerMethod;
     }
 
     @Override

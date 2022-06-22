@@ -17,6 +17,7 @@ package org.greenrobot.eventbus;
 
 import org.greenrobot.eventbus.meta.HandlerInfo;
 import org.greenrobot.eventbus.meta.HandlerInfoIndex;
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -195,7 +196,10 @@ class HandlerMethodFinder {
                         if (findState.checkAdd(method, exceptionalEventType)) {
                             ExceptionalThreadMode threadMode = handleAnnotation.threadMode();
                             ExceptionalActionMode actionMode = handleAnnotation.actionMode();
-                            findState.handlerMethods.add(new HandlerMethod(method, exceptionalEventType, threadMode, actionMode,
+                            Class<? extends ExpectedScopeData> expectedScopeClass = handleAnnotation.expectedScopeClass();
+
+                            findState.handlerMethods.add(new HandlerMethod(method, exceptionalEventType,
+                                    threadMode, actionMode, expectedScopeClass,
                                     handleAnnotation.priority(), handleAnnotation.sticky()));
                         }
                     }

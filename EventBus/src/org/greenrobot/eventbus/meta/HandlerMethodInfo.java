@@ -17,39 +17,32 @@ package org.greenrobot.eventbus.meta;
 
 import org.greenrobot.eventbus.ExceptionalActionMode;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
 
 public class HandlerMethodInfo {
     final String methodName;
+    final Class<?> eventType;
     final ExceptionalThreadMode threadMode;
     final ExceptionalActionMode actionMode;
-    final Class<?> eventType;
+    final Class<? extends ExpectedScopeData> expectedScopeClass;
     final int priority;
     final boolean sticky;
 
-    public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode,
-                             ExceptionalActionMode actionMode, int priority, boolean sticky) {
+    public HandlerMethodInfo(String methodName, Class<?> eventType,
+                             ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
+                             Class<? extends ExpectedScopeData> expectedScopeClass, int priority, boolean sticky) {
         this.methodName = methodName;
+        this.eventType = eventType;
         this.threadMode = threadMode;
         this.actionMode = actionMode;
-        this.eventType = eventType;
+        this.expectedScopeClass = expectedScopeClass;
         this.priority = priority;
         this.sticky = sticky;
     }
 
-    public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode,
+    public HandlerMethodInfo(String methodName, Class<?> eventType,
+                             ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode,
                              int priority, boolean sticky) {
-        this(methodName, eventType, threadMode, ExceptionalActionMode.EAGER_HANDLE, priority, sticky);
-    }
-
-    public HandlerMethodInfo(String methodName, Class<?> eventType) {
-        this(methodName, eventType, ExceptionalThreadMode.THROWING, ExceptionalActionMode.EAGER_HANDLE,0, false);
-    }
-
-    public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode) {
-        this(methodName, eventType, threadMode, ExceptionalActionMode.EAGER_HANDLE,0, false);
-    }
-
-    public HandlerMethodInfo(String methodName, Class<?> eventType, ExceptionalThreadMode threadMode, ExceptionalActionMode actionMode) {
-        this(methodName, eventType, threadMode, actionMode,0, false);
+        this(methodName, eventType, threadMode, actionMode, null, priority, sticky);
     }
 }
