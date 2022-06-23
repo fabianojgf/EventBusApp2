@@ -8,6 +8,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.eventbusapp.R;
+import com.example.eventbusapp.notification.UserHealthProblemExceptionEvent;
+import com.example.eventbusapp.notification.scope.UserAtHomeExpectedScope;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalActionMode;
@@ -48,10 +50,12 @@ public class SecondActivity extends AppCompatActivity {
         //EventBus.getDefault(this).unregisterHandler(this);
     }
 
-    @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.LAZY_HANDLE)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+    @Handle(threadMode = ExceptionalThreadMode.MAIN,
+            actionMode = ExceptionalActionMode.LAZY_HANDLE,
+            expectedScopeClass = UserAtHomeExpectedScope.class)
+    public void onExceptionEvent(UserHealthProblemExceptionEvent exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->SecondActivity: onExceptionEvent");
-        Toast.makeText(this, "[FA/SA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "UserHealthProblemExceptionEvent ---> USER AT WORK!!!", Toast.LENGTH_LONG).show();
     }
 }

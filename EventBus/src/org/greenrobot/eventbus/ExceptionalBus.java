@@ -5,6 +5,7 @@ import android.app.Service;
 import android.content.Intent;
 
 import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
+import org.greenrobot.eventbus.parametric_scope.NoExpectedScopeData;
 import org.greenrobot.eventbus.parametric_scope.ScopeExceptionEvent;
 
 import java.lang.reflect.InvocationTargetException;
@@ -23,7 +24,7 @@ public class ExceptionalBus extends AbstractBus {
     private static final Map<Class<?>, List<Class<?>>> exceptionalEventTypesCache = new HashMap<>();
 
     private Map<Class<?>, CopyOnWriteArrayList<HandlerClass>> mappedHandlerClassesByExceptionalEventType;
-    private Map<Class<?>, CopyOnWriteArrayList<Handlement>> handlementsByExceptionalEventType;
+    private Map<Class<?>, CopyOnWriteArrayList<Handling>> handlingsByExceptionalEventType;
     private Map<Object, List<Class<?>>> typesByHandler;
     private Map<Class<?>, Object> stickyExceptionalEvents;
 
@@ -73,7 +74,7 @@ public class ExceptionalBus extends AbstractBus {
         super(eventbus);
 
         mappedHandlerClassesByExceptionalEventType = new HashMap<>();
-        handlementsByExceptionalEventType = new HashMap<>();
+        handlingsByExceptionalEventType = new HashMap<>();
         typesByHandler = new HashMap<>();
         stickyExceptionalEvents = new ConcurrentHashMap<>();
 
@@ -111,7 +112,7 @@ public class ExceptionalBus extends AbstractBus {
     /**
      * Registers the given handler to receive exceptional events. Handlers must call {@link #unregisterHandler(Object)} once they
      * are no longer interested in receiving exceptional events.
-     * <p/>
+     * <p>
      * Handlers have exceptional event handling methods that must be annotated by {@link Handle}.
      * The {@link Handle} annotation also allows configuration like {@link
      * ExceptionalThreadMode} and priority.
@@ -136,7 +137,7 @@ public class ExceptionalBus extends AbstractBus {
     }
 
     /**
-     * Registers a handlement, which consists of an association between a handler object and a handler method,
+     * Registers a handling, which consists of an association between a handler object and a handler method,
      * which will be invoked to handle a given exceptional event.
      *
      * Important: Must be called in synchronized block.
@@ -146,22 +147,22 @@ public class ExceptionalBus extends AbstractBus {
      */
     private void handle(Object handler, HandlerMethod handlerMethod) {
         Class<?> exceptionalEventType = handlerMethod.exceptionalEventType;
-        Handlement newHandlement = new Handlement(handler, handlerMethod);
-        CopyOnWriteArrayList<Handlement> handlements = handlementsByExceptionalEventType.get(exceptionalEventType);
-        if (handlements == null) {
-            handlements = new CopyOnWriteArrayList<>();
-            handlementsByExceptionalEventType.put(exceptionalEventType, handlements);
+        Handling newHandling = new Handling(handler, handlerMethod);
+        CopyOnWriteArrayList<Handling> handlings = handlingsByExceptionalEventType.get(exceptionalEventType);
+        if (handlings == null) {
+            handlings = new CopyOnWriteArrayList<>();
+            handlingsByExceptionalEventType.put(exceptionalEventType, handlings);
         } else {
-            if (handlements.contains(newHandlement)) {
+            if (handlings.contains(newHandling)) {
                 throw new EventBusException("Handler " + handler.getClass() + " already registered to exceptional event "
                         + exceptionalEventType);
             }
         }
 
-        int size = handlements.size();
+        int size = handlings.size();
         for (int i = 0; i <= size; i++) {
-            if (i == size || handlerMethod.priority > handlements.get(i).handlerMethod.priority) {
-                handlements.add(i, newHandlement);
+            if (i == size || handlerMethod.priority > handlings.get(i).handlerMethod.priority) {
+                handlings.add(i, newHandling);
                 break;
             }
         }
@@ -184,18 +185,18 @@ public class ExceptionalBus extends AbstractBus {
                     Class<?> candidateExceptionalEventType = entry.getKey();
                     if (exceptionalEventType.isAssignableFrom(candidateExceptionalEventType)) {
                         Object stickyExceptionalEvent = entry.getValue();
-                        checkThrowsExceptionalStickyEventToHandlement(newHandlement, stickyExceptionalEvent);
+                        checkThrowsExceptionalStickyEventToHandling(newHandling, stickyExceptionalEvent);
                     }
                 }
             } else {
                 Object stickyExceptionalEvent = stickyExceptionalEvents.get(exceptionalEventType);
-                checkThrowsExceptionalStickyEventToHandlement(newHandlement, stickyExceptionalEvent);
+                checkThrowsExceptionalStickyEventToHandling(newHandling, stickyExceptionalEvent);
             }
         }
     }
 
     /**
-     * Registers a class handlement, which consists of an association between a class,
+     * Registers a class handling, which consists of an association between a class,
      * which has handler methods mapped, and one of these handler methods.
      *
      * Important: Must be called in synchronized block.
@@ -235,14 +236,14 @@ public class ExceptionalBus extends AbstractBus {
     /**
      * Checks if there is a exceptional stick event to be throwed.
      *
-     * @param newHandlement
+     * @param newHandling
      * @param exceptionalStickyEvent
      */
-    private void checkThrowsExceptionalStickyEventToHandlement(Handlement newHandlement, Object exceptionalStickyEvent) {
+    private void checkThrowsExceptionalStickyEventToHandling(Handling newHandling, Object exceptionalStickyEvent) {
         if (exceptionalStickyEvent != null) {
             // If the handler is trying to abort the exceptional event, it will fail (exceptional event is not tracked in throwing state)
             // --> Strange corner case, which we don't take care of here.
-            throwsToHandlement(newHandlement, exceptionalStickyEvent, isMainThread());
+            throwsToHandling(newHandling, exceptionalStickyEvent, isMainThread());
         }
     }
 
@@ -258,20 +259,20 @@ public class ExceptionalBus extends AbstractBus {
 
     /**
      * Unregisters the given handler object from the exceptional event type.
-     * Important: Only updates handlementsByExceptionalEventType, not typesByHandler! Caller must update typesByHandler.
+     * Important: Only updates handlingsByExceptionalEventType, not typesByHandler! Caller must update typesByHandler.
      *
      * @param handler
      * @param exceptionalEventType
      */
     private void unhandleByExceptionalEventType(Object handler, Class<?> exceptionalEventType) {
-        List<Handlement> handlements = handlementsByExceptionalEventType.get(exceptionalEventType);
-        if (handlements != null) {
-            int size = handlements.size();
+        List<Handling> handlings = handlingsByExceptionalEventType.get(exceptionalEventType);
+        if (handlings != null) {
+            int size = handlings.size();
             for (int i = 0; i < size; i++) {
-                Handlement handlement = handlements.get(i);
-                if (handlement.handler == handler) {
-                    handlement.active = false;
-                    handlements.remove(i);
+                Handling handling = handlings.get(i);
+                if (handling.handler == handler) {
+                    handling.active = false;
+                    handlings.remove(i);
                     i--;
                     size--;
                 }
@@ -394,7 +395,7 @@ public class ExceptionalBus extends AbstractBus {
             throw new EventBusException("Exceptional event may not be null");
         } else if (throwingState.exceptionalEvent != exceptionalEvent) {
             throw new EventBusException("Only the currently handled exceptional event may be aborted");
-        } else if (throwingState.handlement.handlerMethod.threadMode != ExceptionalThreadMode.THROWING) {
+        } else if (throwingState.handling.handlerMethod.threadMode != ExceptionalThreadMode.THROWING) {
             throw new EventBusException(" exceptional event handlers may only abort the incoming exceptional event");
         }
 
@@ -541,18 +542,18 @@ public class ExceptionalBus extends AbstractBus {
      */
     private void throwSingleExceptionalEvent(Object exceptionalEvent, Object handler, ThrowingThreadState throwingState) throws Error {
         Class<?> exceptionalEventClass = exceptionalEvent.getClass();
-        boolean handlementFound = false;
+        boolean handlingFound = false;
         if (exceptionalEventInheritance) {
             List<Class<?>> exceptionalEventTypes = lookupAllExceptionalEventTypes(exceptionalEventClass);
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                handlementFound |= throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, clazz);
+                handlingFound |= throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, clazz);
             }
         } else {
-            handlementFound = throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, exceptionalEventClass);
+            handlingFound = throwsSingleExceptionalEventForExceptionalEventType(exceptionalEvent, handler, throwingState, exceptionalEventClass);
         }
-        if (!handlementFound) {
+        if (!handlingFound) {
             if (logNoHandlerMessages) {
                 getLogger().log(Level.FINE, "No handlers registered for exceptional event " + exceptionalEventClass);
             }
@@ -573,23 +574,23 @@ public class ExceptionalBus extends AbstractBus {
     private boolean throwsSingleExceptionalEventForExceptionalEventType(
             Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
 
-        CopyOnWriteArrayList<Handlement> handlements = getHandlementsForThrowingExceptionalEvent(
+        CopyOnWriteArrayList<Handling> handlings = getHandlingsForThrowingExceptionalEvent(
                 exceptionalEvent,exceptionalEventClass);
 
-        if (handlements != null && !handlements.isEmpty()) {
-            for (Handlement handlement : handlements) {
-                if(throwingState.isLate && handler != null && !handlement.handler.equals(handler))
+        if (handlings != null && !handlings.isEmpty()) {
+            for (Handling handling : handlings) {
+                if(throwingState.isLate && handler != null && !handling.handler.equals(handler))
                     continue;
 
                 throwingState.exceptionalEvent = exceptionalEvent;
-                throwingState.handlement = handlement;
+                throwingState.handling = handling;
                 boolean aborted;
                 try {
-                    throwsToHandlement(handlement, exceptionalEvent, throwingState.isMainThread);
+                    throwsToHandling(handling, exceptionalEvent, throwingState.isMainThread);
                     aborted = throwingState.canceled;
                 } finally {
                     throwingState.exceptionalEvent = null;
-                    throwingState.handlement = null;
+                    throwingState.handling = null;
                     throwingState.canceled = false;
                 }
                 if (aborted) {
@@ -607,25 +608,26 @@ public class ExceptionalBus extends AbstractBus {
      * @param exceptionalEventClass
      * @return
      */
-    private CopyOnWriteArrayList<Handlement> getHandlementsForThrowingExceptionalEvent(
+    private CopyOnWriteArrayList<Handling> getHandlingsForThrowingExceptionalEvent(
             Object exceptionalEvent, Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<Handlement> handlements;
+        CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlements = handlementsByExceptionalEventType.get(exceptionalEventClass);
+            handlings = handlingsByExceptionalEventType.get(exceptionalEventClass);
 
             /* If the exceptional event is of the parameterized scope type,
               evaluate the handler selection based on the scope information. */
             if(ScopeExceptionEvent.class.isAssignableFrom(exceptionalEvent.getClass())) {
                 ScopeExceptionEvent scopeExceptionEvent = (ScopeExceptionEvent) exceptionalEvent;
 
-                for (Handlement handlement : handlements) {
+                for (Handling handling : handlings) {
                     Class<? extends ExpectedScopeData> expectedScopeClass =
-                            handlement.getHandlerMethod().expectedScopeClass;
-                    if (expectedScopeClass != null) {
+                            handling.getHandlerMethod().expectedScopeClass;
+                    if (expectedScopeClass != null
+                            && !expectedScopeClass.equals(NoExpectedScopeData.class)) {
                         try {
                             ExpectedScopeData expectedScopeData = expectedScopeClass.newInstance();
                             if(!expectedScopeData.matched(scopeExceptionEvent.getScopeData())) {
-                                handlements.remove(handlement);
+                                handlings.remove(handling);
                                 continue;
                             }
                         } catch (InstantiationException e) {
@@ -637,7 +639,7 @@ public class ExceptionalBus extends AbstractBus {
                 }
             }
         }
-        return handlements;
+        return handlings;
     }
 
     private Set<Class<?>> getMappedHandlerClassForExceptionalEvent(Object exceptionalEvent) {
@@ -673,42 +675,42 @@ public class ExceptionalBus extends AbstractBus {
 
     /**
      *
-     * @param handlement
+     * @param handling
      * @param exceptionalEvent
      * @param isMainThread
      */
-    private void throwsToHandlement(Handlement handlement, Object exceptionalEvent, boolean isMainThread) {
-        switch (handlement.handlerMethod.threadMode) {
+    private void throwsToHandling(Handling handling, Object exceptionalEvent, boolean isMainThread) {
+        switch (handling.handlerMethod.threadMode) {
             case THROWING:
-                invokeHandler(handlement, exceptionalEvent);
+                invokeHandler(handling, exceptionalEvent);
                 break;
             case MAIN:
                 if (isMainThread) {
-                    invokeHandler(handlement, exceptionalEvent);
+                    invokeHandler(handling, exceptionalEvent);
                 } else {
-                    mainThreadThrower.enqueue(handlement, exceptionalEvent);
+                    mainThreadThrower.enqueue(handling, exceptionalEvent);
                 }
                 break;
             case MAIN_ORDERED:
                 if (mainThreadThrower != null) {
-                    mainThreadThrower.enqueue(handlement, exceptionalEvent);
+                    mainThreadThrower.enqueue(handling, exceptionalEvent);
                 } else {
                     // temporary: technically not correct as poster not decoupled from subscriber
-                    invokeHandler(handlement, exceptionalEvent);
+                    invokeHandler(handling, exceptionalEvent);
                 }
                 break;
             case BACKGROUND:
                 if (isMainThread) {
-                    backgroundThrower.enqueue(handlement, exceptionalEvent);
+                    backgroundThrower.enqueue(handling, exceptionalEvent);
                 } else {
-                    invokeHandler(handlement, exceptionalEvent);
+                    invokeHandler(handling, exceptionalEvent);
                 }
                 break;
             case ASYNC:
-                asyncThrower.enqueue(handlement, exceptionalEvent);
+                asyncThrower.enqueue(handling, exceptionalEvent);
                 break;
             default:
-                throw new IllegalStateException("Unknown thread mode: " + handlement.handlerMethod.threadMode);
+                throw new IllegalStateException("Unknown thread mode: " + handling.handlerMethod.threadMode);
         }
     }
 
@@ -799,7 +801,7 @@ public class ExceptionalBus extends AbstractBus {
     }
 
     /**
-     * Invokes the handler if the handlements is still active. Skipping handlements prevents race conditions
+     * Invokes the handler if the handlings is still active. Skipping handlings prevents race conditions
      * between {@link #unregisterHandler(Object)} and exceptional event delivery. Otherwise the exceptional event might be delivered after the
      * handler unregistered. This is particularly important for main thread delivery and registrations bound to the
      * live cycle of an Activity or Fragment.
@@ -808,24 +810,24 @@ public class ExceptionalBus extends AbstractBus {
      */
     void invokeHandler(PendingThrow pendingThrow) {
         Object exceptionalEvent = pendingThrow.exceptionalEvent;
-        Handlement handlement = pendingThrow.handlement;
+        Handling handling = pendingThrow.handling;
         PendingThrow.releasePendingThrow(pendingThrow);
-        if (handlement.active) {
-            invokeHandler(handlement, exceptionalEvent);
+        if (handling.active) {
+            invokeHandler(handling, exceptionalEvent);
         }
     }
 
     /**
      * Invokes the handler to perform some processing on the exceptional event.
      *
-     * @param handlement
+     * @param handling
      * @param exceptionalEvent
      */
-    void invokeHandler(Handlement handlement, Object exceptionalEvent) {
+    void invokeHandler(Handling handling, Object exceptionalEvent) {
         try {
-            handlement.handlerMethod.method.invoke(handlement.handler, exceptionalEvent);
+            handling.handlerMethod.method.invoke(handling.handler, exceptionalEvent);
         } catch (InvocationTargetException e) {
-            handleHandlerException(handlement, exceptionalEvent, e.getCause());
+            handleHandlerException(handling, exceptionalEvent, e.getCause());
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Unexpected exception", e);
         }
@@ -834,15 +836,15 @@ public class ExceptionalBus extends AbstractBus {
     /**
      * Process exception caught during invocation of the handler.
      *
-     * @param handlement
+     * @param handling
      * @param exceptionalEvent
      * @param cause
      */
-    private void handleHandlerException(Handlement handlement, Object exceptionalEvent, Throwable cause) {
+    private void handleHandlerException(Handling handling, Object exceptionalEvent, Throwable cause) {
         if (exceptionalEvent instanceof HandlerExceptionExceptionalEvent) {
             if (logHandlerExceptions) {
                 // Don't send another HandlerExceptionExceptionalEvent to avoid infinite exceptional event recursion, just log.
-                getLogger().log(Level.SEVERE, "HandlerExceptionExceptionalEvent handler " + handlement.handler.getClass()
+                getLogger().log(Level.SEVERE, "HandlerExceptionExceptionalEvent handler " + handling.handler.getClass()
                         + " threw an exception", cause);
                 HandlerExceptionExceptionalEvent exExceptionalEvent = (HandlerExceptionExceptionalEvent) exceptionalEvent;
                 getLogger().log(Level.SEVERE, "Initial exceptional event " + exExceptionalEvent.causingExceptionalEvent + " caused exception in "
@@ -854,11 +856,11 @@ public class ExceptionalBus extends AbstractBus {
             }
             if (logHandlerExceptions) {
                 getLogger().log(Level.SEVERE, "Could not dispatch exceptional event: " + exceptionalEvent.getClass() + " to handling class "
-                        + handlement.handler.getClass(), cause);
+                        + handling.handler.getClass(), cause);
             }
             if (sendHandlerExceptionExceptionalEvent) {
                 HandlerExceptionExceptionalEvent exExceptionalEvent = new HandlerExceptionExceptionalEvent(getEventBus(), cause, exceptionalEvent,
-                        handlement.handler);
+                        handling.handler);
                 throwException(exExceptionalEvent);
             }
         }
@@ -873,7 +875,7 @@ public class ExceptionalBus extends AbstractBus {
         boolean isThrowing;
         boolean isMainThread;
         boolean isLate;
-        Handlement handlement;
+        Handling handling;
         Object exceptionalEvent;
         boolean canceled;
 
@@ -895,8 +897,8 @@ public class ExceptionalBus extends AbstractBus {
         return exceptionalEventInheritance;
     }
 
-    public Map<Class<?>, CopyOnWriteArrayList<Handlement>> getHandlementsByExceptionalEventType() {
-        return handlementsByExceptionalEventType;
+    public Map<Class<?>, CopyOnWriteArrayList<Handling>> getHandlingsByExceptionalEventType() {
+        return handlingsByExceptionalEventType;
     }
 
     public Map<Class<?>, CopyOnWriteArrayList<HandlerClass>> getMappedHandlerClassesByExceptionalEventType() {

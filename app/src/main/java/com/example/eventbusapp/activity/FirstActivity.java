@@ -9,42 +9,14 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.example.eventbusapp.R;
+import com.example.eventbusapp.notification.UserHealthProblemExceptionEvent;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.parametric_scope.EvalObservedScopeData;
+
+import br.ufc.dc.eval.Assignment;
 
 public class FirstActivity extends AppCompatActivity {
-    public static class ExceptionEvent {
-        Exception exception;
-
-        public ExceptionEvent(Exception exception) {
-            this.exception = exception;
-        }
-
-        public Exception getException() {
-            return exception;
-        }
-
-        public void setException(Exception exception) {
-            this.exception = exception;
-        }
-    }
-
-    public static class ExceptionEvent2 {
-        Exception exception;
-
-        public ExceptionEvent2(Exception exception) {
-            this.exception = exception;
-        }
-
-        public Exception getException() {
-            return exception;
-        }
-
-        public void setException(Exception exception) {
-            this.exception = exception;
-        }
-    }
-
     Button buttonDivide;
     EditText editTextNumerador, editTextDenominador, editTextResultado;
 
@@ -74,7 +46,13 @@ public class FirstActivity extends AppCompatActivity {
             Double result = numerador / denominador;
             editTextResultado.setText(String.valueOf(result));
         } catch(Exception e) {
-            EventBus.getDefault(this).throwException(new ExceptionEvent2(e));
+            Assignment assignment = new Assignment();
+
+            //TODO
+
+            EventBus.getDefault(this).throwException(
+                    new UserHealthProblemExceptionEvent(e,
+                            new EvalObservedScopeData(assignment)));
         }
     }
 }

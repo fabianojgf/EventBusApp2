@@ -33,27 +33,27 @@ public class ExceptionalBusQuerier {
                 int countTypes = exceptionalEventTypes.size();
                 for (int h = 0; h < countTypes; h++) {
                     Class<?> clazz = exceptionalEventTypes.get(h);
-                    if (hasHandlementForExceptionalEventType(clazz)) {
+                    if (hasHandlingForExceptionalEventType(clazz)) {
                         return true;
                     }
                 }
             }
             return false;
         }
-        return hasHandlementForExceptionalEventType(exceptionalEventClass);
+        return hasHandlingForExceptionalEventType(exceptionalEventClass);
     }
 
     /**
-     * Checks if there is any handlement associated with this type of exceptional event.
+     * Checks if there is any handling associated with this type of exceptional event.
      *
      * @param exceptionalEventClass
      * @return
      */
-    public boolean hasHandlementForExceptionalEventType(Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<Handlement> handlements = null;
+    public boolean hasHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
+        CopyOnWriteArrayList<Handling> handlings = null;
         synchronized (this) {
-            handlements = exceptionalBus.getHandlementsByExceptionalEventType().get(exceptionalEventClass);
-            return handlements != null && !handlements.isEmpty();
+            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            return handlings != null && !handlings.isEmpty();
         }
     }
 
@@ -82,23 +82,23 @@ public class ExceptionalBusQuerier {
                 int countTypes = exceptionalEventTypes.size();
                 for (int h = 0; h < countTypes; h++) {
                     Class<?> clazz = exceptionalEventTypes.get(h);
-                    if (hasMappedClassHandlementForExceptionalEventType(clazz)) {
+                    if (hasMappedClassHandlingForExceptionalEventType(clazz)) {
                         return true;
                     }
                 }
             }
             return false;
         }
-        return hasMappedClassHandlementForExceptionalEventType(exceptionalEventClass);
+        return hasMappedClassHandlingForExceptionalEventType(exceptionalEventClass);
     }
 
     /**
-     * Checks if there is any handlement associated with this type of exceptional event.
+     * Checks if there is any handling associated with this type of exceptional event.
      *
      * @param exceptionalEventClass
      * @return
      */
-    public boolean hasMappedClassHandlementForExceptionalEventType(Class<?> exceptionalEventClass) {
+    public boolean hasMappedClassHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<HandlerClass> mappedHandlerClasses;
         synchronized (this) {
             mappedHandlerClasses = exceptionalBus.getMappedHandlerClassesByExceptionalEventType().get(exceptionalEventClass);
@@ -137,12 +137,12 @@ public class ExceptionalBusQuerier {
      * @return
      */
     public boolean isHandlerForExceptionalEventType(Object handler, Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<Handlement> handlements;
+        CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlements = exceptionalBus.getHandlementsByExceptionalEventType().get(exceptionalEventClass);
-            if(handlements != null && !handlements.isEmpty()) {
-                for(Handlement handlement : handlements) {
-                    if(handlement.handler.equals(handler))
+            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            if(handlings != null && !handlings.isEmpty()) {
+                for(Handling handling : handlings) {
+                    if(handling.handler.equals(handler))
                         return true;
                 }
             }
@@ -166,12 +166,12 @@ public class ExceptionalBusQuerier {
     }
 
     public boolean isRegisteredHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<Handlement> handlements;
+        CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlements = exceptionalBus.getHandlementsByExceptionalEventType().get(exceptionalEventClass);
-            if(handlements != null && !handlements.isEmpty()) {
-                for(Handlement handlement : handlements) {
-                    if(handlement.handler.getClass().equals(handlerClassType))
+            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            if(handlings != null && !handlings.isEmpty()) {
+                for(Handling handling : handlings) {
+                    if(handling.handler.getClass().equals(handlerClassType))
                         return true;
                 }
             }

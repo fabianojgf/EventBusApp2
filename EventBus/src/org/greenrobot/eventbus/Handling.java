@@ -18,7 +18,7 @@ package org.greenrobot.eventbus;
 /**
  * @author ---
  */
-final class Handlement {
+final class Handling {
     final Object handler;
     final HandlerMethod handlerMethod;
     /**
@@ -27,7 +27,7 @@ final class Handlement {
      */
     volatile boolean active;
 
-    Handlement(Object handler, HandlerMethod handlerMethod) {
+    Handling(Object handler, HandlerMethod handlerMethod) {
         this.handler = handler;
         this.handlerMethod = handlerMethod;
         active = true;
@@ -43,10 +43,10 @@ final class Handlement {
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof Handlement) {
-            Handlement otherHandlement = (Handlement) other;
-            return handler == otherHandlement.handler
-                    && handlerMethod.equals(otherHandlement.handlerMethod);
+        if (other instanceof Handling) {
+            Handling otherHandling = (Handling) other;
+            return handler == otherHandling.handler
+                    && handlerMethod.equals(otherHandling.handlerMethod);
         } else {
             return false;
         }

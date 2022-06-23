@@ -66,7 +66,7 @@ public class RegularBusBuilder {
 
     /**
      * Fails if an subscriber throws an exception (default: false).
-     * <p/>
+     * <p>
      * Tip: Use this with BuildConfig.DEBUG to let the app crash in DEBUG mode (only). This way, you won't miss
      * exceptions during development.
      */
@@ -80,7 +80,7 @@ public class RegularBusBuilder {
      * Switching this feature off will improve posting of events. For simple event classes extending Object directly,
      * we measured a speed up of 20% for event posting. For more complex event hierarchies, the speed up should be
      * greater than 20%.
-     * <p/>
+     * <p>
      * However, keep in mind that event posting usually consumes just a small proportion of CPU time inside an app,
      * unless it is posting at high rates, e.g. hundreds/thousands of events per second.
      */

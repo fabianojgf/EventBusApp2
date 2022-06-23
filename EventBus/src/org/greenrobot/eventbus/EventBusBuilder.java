@@ -52,7 +52,7 @@ public class EventBusBuilder {
 
     /**
      * By default, EventBus considers that the registration of classes with methods for subscribe  or handle was not carried out.
-     * <p/>
+     * <p>
      * Registration will be performed during the first execution of {@link EventBus#post(Object)} or {@link EventBus#throwException(Object)} methods.
      */
     public EventBusBuilder mappedClassesRegistrationPerformed(boolean mappedClassesRegistrationPerformed) {
@@ -176,7 +176,7 @@ public class EventBusBuilder {
 
     /**
      * Set a specific log handler for all EventBus logging.
-     * <p/>
+     * <p>
      * By default all logging is via {@link android.util.Log} but if you want to use EventBus
      * outside the Android environment then you will need to provide another log target.
      */

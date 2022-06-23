@@ -67,7 +67,7 @@ public class ExceptionalBusBuilder {
 
     /**
      * Fails if an handler throws an exception (default: false).
-     * <p/>
+     * <p>
      * Tip: Use this with BuildConfig.DEBUG to let the app crash in DEBUG mode (only). This way, you won't miss
      * exceptions during development.
      */
@@ -81,7 +81,7 @@ public class ExceptionalBusBuilder {
      * Switching this feature off will improve throwing of exceptional events. For simple exceptional event classes extending Object directly,
      * we measured a speed up of 20% for exceptional event throwing. For more complex event hierarchies, the speed up should be
      * greater than 20%.
-     * <p/>
+     * <p>
      * However, keep in mind that exceptional event throwing usually consumes just a small proportion of CPU time inside an app,
      * unless it is throwing at high rates, e.g. hundreds/thousands of exceptional events per second.
      */

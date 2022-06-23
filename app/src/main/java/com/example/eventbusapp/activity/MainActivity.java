@@ -10,7 +10,9 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.eventbusapp.R;
-import com.example.eventbusapp.service.FirstService;
+import com.example.eventbusapp.notification.UserForgettingProblemExceptionEvent;
+import com.example.eventbusapp.notification.UserHealthProblemExceptionEvent;
+import com.example.eventbusapp.notification.scope.UserAtHomeExpectedScope;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
@@ -57,17 +59,18 @@ public class MainActivity extends AppCompatActivity {
         EventBus.getDefault(this).unregisterHandler(this);
     }
 
-    @Handle(threadMode = ExceptionalThreadMode.MAIN)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent exceptionEvent) {
+    @Handle(threadMode = ExceptionalThreadMode.MAIN,
+            expectedScopeClass = UserAtHomeExpectedScope.class)
+    public void onExceptionEvent(UserHealthProblemExceptionEvent exceptionEvent) {
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->MainActivity: onExceptionEvent");
-        Toast.makeText(this, "[MA] Ocorreu uma Exceção!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "UserHealthProblemExceptionEvent --> USER AT HOME!!!", Toast.LENGTH_SHORT).show();
     }
 
     @Handle(threadMode = ExceptionalThreadMode.MAIN)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+    public void onExceptionEvent(UserForgettingProblemExceptionEvent exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->MainActivity: onExceptionEvent");
-        Toast.makeText(this, "[FA/MA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "UserForgettingProblemExceptionEvent", Toast.LENGTH_LONG).show();
     }
 
     public void iniciar(View view) {

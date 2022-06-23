@@ -8,6 +8,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventbusapp.R;
+import com.example.eventbusapp.notification.UserIrritationProblemExceptionEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalThreadMode;
@@ -48,9 +49,9 @@ public class ThirdActivity extends AppCompatActivity {
     }
 
     @Handle(threadMode = ExceptionalThreadMode.MAIN)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+    public void onExceptionEvent(UserIrritationProblemExceptionEvent exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->ThirdActivity: onExceptionEvent");
-        Toast.makeText(this, "[FA/TA] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "UserIrritationProblemExceptionEvent", Toast.LENGTH_LONG).show();
     }
 }

@@ -31,8 +31,8 @@ class AsyncThrower implements Runnable, Thrower {
         queue = new PendingThrowQueue();
     }
 
-    public void enqueue(Handlement handlement, Object exceptionalEvent) {
-        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, exceptionalEvent);
+    public void enqueue(Handling handling, Object exceptionalEvent) {
+        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handling, exceptionalEvent);
         queue.enqueue(pendingThrow);
         eventBus.getExecutorService().execute(this);
     }

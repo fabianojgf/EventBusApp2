@@ -23,10 +23,10 @@ package org.greenrobot.eventbus;
 interface Thrower {
 
     /**
-     * Enqueue an exceptional event to be throwed for a particular handlement.
+     * Enqueue an exceptional event to be throwed for a particular handling.
      *
-     * @param handlement Handlement which will receive the exceptional event.
+     * @param handling Handling which will receive the exceptional event.
      * @param exceptionalEvent        Exceptional event that will be throwed to handlers.
      */
-    void enqueue(Handlement handlement, Object exceptionalEvent);
+    void enqueue(Handling handling, Object exceptionalEvent);
 }

@@ -32,9 +32,9 @@ final class HandlerClass {
     @Override
     public boolean equals(Object other) {
         if (other instanceof HandlerClass) {
-            HandlerClass otherHandlement = (HandlerClass) other;
-            return handlerClass == otherHandlement.handlerClass
-                    && handlerMethod.equals(otherHandlement.handlerMethod);
+            HandlerClass otherHandling = (HandlerClass) other;
+            return handlerClass == otherHandling.handlerClass
+                    && handlerMethod.equals(otherHandling.handlerMethod);
         } else {
             return false;
         }
