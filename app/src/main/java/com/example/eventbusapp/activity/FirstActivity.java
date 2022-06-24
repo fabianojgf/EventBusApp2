@@ -40,14 +40,14 @@ public class FirstActivity extends AppCompatActivity {
         } catch(UserClickException e) {
             Assignment assignment = new Assignment();
             assignment.assign("userName", "Fabiano");
-            assignment.assign("userLocationX", -3.759054);
-            assignment.assign("userLocationY", -38.538155);
+            assignment.assign("userLocationLat", -3.759054);
+            assignment.assign("userLocationLong", -38.538155);
 
-            assignment.assign("userHomeLocationX", -3.759011);
-            assignment.assign("userHomeLocationY", -38.538085);
+            assignment.assign("userHomeLocationLat", -3.759011);
+            assignment.assign("userHomeLocationLong", -38.538085);
 
-            assignment.assign("userWorkLocationX", -3.7452654);
-            assignment.assign("userWorkLocationY", -38.5758069);
+            assignment.assign("userWorkLocationLat", -3.7452654);
+            assignment.assign("userWorkLocationLong", -38.5758069);
 
             EventBus.getDefault(this).throwException(
                     new UserHealthProblemExceptionEvent(e,

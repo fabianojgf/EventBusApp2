@@ -19,10 +19,10 @@ public class UserAtWorkExpectedScope extends EvalExpectedScopeData {
     @Override
     protected Expression matchExpression(EvalObservedScopeData scopeData) {
         StringVariable userName = new StringVariable("userName");
-        NumberVariable userLocationX = new NumberVariable("userLocationX");
-        NumberVariable userLocationY = new NumberVariable("userLocationX");
-        NumberVariable userWorkLocationX = new NumberVariable("userWorkLocationX");
-        NumberVariable userWorkLocationY = new NumberVariable("userWorkLocationY");
+        NumberVariable userLocationLat = new NumberVariable("userLocationLat");
+        NumberVariable userLocationLong = new NumberVariable("userLocationLat");
+        NumberVariable userWorkLocationLat = new NumberVariable("userWorkLocationLat");
+        NumberVariable userWorkLocationLong = new NumberVariable("userWorkLocationLong");
 
         double radius = 10.0; //10 Meters.
 
@@ -30,15 +30,15 @@ public class UserAtWorkExpectedScope extends EvalExpectedScopeData {
 
         try {
             Location userLocation = new Location("");
-            userLocation.setLatitude(userLocationX.getValuation(
+            userLocation.setLatitude(userLocationLat.getValuation(
                     scopeData.getAssignment()).doubleValue());
-            userLocation.setLongitude(userLocationY.getValuation(
+            userLocation.setLongitude(userLocationLong.getValuation(
                     scopeData.getAssignment()).doubleValue());
 
             Location userWorkLocation = new Location("");
-            userLocation.setLatitude(userWorkLocationX.getValuation(
+            userWorkLocation.setLatitude(userWorkLocationLat.getValuation(
                     scopeData.getAssignment()).doubleValue());
-            userLocation.setLongitude(userWorkLocationY.getValuation(
+            userWorkLocation.setLongitude(userWorkLocationLong.getValuation(
                     scopeData.getAssignment()).doubleValue());
 
             double distance = userLocation.distanceTo(userWorkLocation);
