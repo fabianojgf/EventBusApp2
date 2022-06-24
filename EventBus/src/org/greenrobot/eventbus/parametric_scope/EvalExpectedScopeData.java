@@ -5,12 +5,12 @@ import br.ufc.dc.eval.Evaluator;
 import br.ufc.dc.eval.Expression;
 
 public abstract class EvalExpectedScopeData extends ExpectedScopeData<EvalObservedScopeData>{
-    protected abstract Expression matchExpression();
+    protected abstract Expression matchExpression(EvalObservedScopeData scopeData);
 
     @Override
     public final boolean matched(EvalObservedScopeData scopeData) {
         try {
-            return Evaluator.eval(scopeData.getAssignment(), matchExpression());
+            return Evaluator.eval(scopeData.getAssignment(), matchExpression(scopeData));
         } catch (EvaluationException e) {
             e.printStackTrace();
         }

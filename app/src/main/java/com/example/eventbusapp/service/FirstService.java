@@ -7,6 +7,8 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.example.eventbusapp.activity.FirstActivity;
+import com.example.eventbusapp.notification.UserIrritationProblemExceptionEvent;
+import com.example.eventbusapp.notification.scope.UserAtHomeExpectedScope;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalActionMode;
@@ -44,10 +46,12 @@ public class FirstService extends Service {
         super.onDestroy();
     }
 
-    @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.LAZY_HANDLE)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+    @Handle(threadMode = ExceptionalThreadMode.MAIN,
+            actionMode = ExceptionalActionMode.LAZY_HANDLE,
+            expectedScopeClass = UserAtHomeExpectedScope.class)
+    public void onExceptionEvent(UserIrritationProblemExceptionEvent exceptionEvent) {
         /* Do something */
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->FirstService: onExceptionEvent");
-        Toast.makeText(this, "[FA/FS] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "UserIrritationProblemExceptionEvent --> USER IN HOME!!!", Toast.LENGTH_LONG).show();
     }
 }

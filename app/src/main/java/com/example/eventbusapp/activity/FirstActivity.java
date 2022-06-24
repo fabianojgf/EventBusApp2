@@ -6,9 +6,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 
 import com.example.eventbusapp.R;
+import com.example.eventbusapp.exception.UserClickException;
 import com.example.eventbusapp.notification.UserHealthProblemExceptionEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -17,42 +17,45 @@ import org.greenrobot.eventbus.parametric_scope.EvalObservedScopeData;
 import br.ufc.dc.eval.Assignment;
 
 public class FirstActivity extends AppCompatActivity {
-    Button buttonDivide;
-    EditText editTextNumerador, editTextDenominador, editTextResultado;
+    Button buttonException;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_first);
 
-        buttonDivide = findViewById(R.id.buttonDivide);
-        buttonDivide.setOnClickListener(new View.OnClickListener() {
+        buttonException = findViewById(R.id.buttonException);
+        buttonException.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                executeSum(v);
+                executeAction(v);
             }
         });
-
-        editTextNumerador = findViewById(R.id.editTextNumerador);
-        editTextDenominador = findViewById(R.id.editTextDenominador);
-        editTextResultado = findViewById(R.id.editTextResultado);
 
         Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity: onCreate: ---");
     }
 
-    public void executeSum(View view) {
+    public void executeAction(View view) {
         try {
-            Double numerador = Double.valueOf(editTextNumerador.getText().toString());
-            Double denominador = Double.valueOf(editTextDenominador.getText().toString());
-            Double result = numerador / denominador;
-            editTextResultado.setText(String.valueOf(result));
-        } catch(Exception e) {
+            methodToThrowException();
+        } catch(UserClickException e) {
             Assignment assignment = new Assignment();
+            assignment.assign("userName", "Fabiano");
+            assignment.assign("userLocationX", -3.759054);
+            assignment.assign("userLocationY", -38.538155);
 
-            //TODO
+            assignment.assign("userHomeLocationX", -3.759011);
+            assignment.assign("userHomeLocationY", -38.538085);
+
+            assignment.assign("userWorkLocationX", -3.7452654);
+            assignment.assign("userWorkLocationY", -38.5758069);
 
             EventBus.getDefault(this).throwException(
                     new UserHealthProblemExceptionEvent(e,
                             new EvalObservedScopeData(assignment)));
         }
+    }
+
+    private void methodToThrowException() throws UserClickException {
+        throw new UserClickException();
     }
 }
