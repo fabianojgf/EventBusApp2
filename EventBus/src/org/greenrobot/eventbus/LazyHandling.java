@@ -18,12 +18,12 @@ package org.greenrobot.eventbus;
 /**
  * @author ---
  */
-final class HandlerClass {
+final class LazyHandling {
     final Class<?> handlerClass;
     final HandlerMethod handlerMethod;
     volatile boolean active;
 
-    HandlerClass(Class<?> handlerClass, HandlerMethod handlerMethod) {
+    LazyHandling(Class<?> handlerClass, HandlerMethod handlerMethod) {
         this.handlerClass = handlerClass;
         this.handlerMethod = handlerMethod;
         active = true;
@@ -31,8 +31,8 @@ final class HandlerClass {
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof HandlerClass) {
-            HandlerClass otherHandling = (HandlerClass) other;
+        if (other instanceof LazyHandling) {
+            LazyHandling otherHandling = (LazyHandling) other;
             return handlerClass == otherHandling.handlerClass
                     && handlerMethod.equals(otherHandling.handlerMethod);
         } else {

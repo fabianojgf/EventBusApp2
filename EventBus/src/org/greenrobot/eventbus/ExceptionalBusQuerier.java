@@ -64,32 +64,22 @@ public class ExceptionalBusQuerier {
      * @param exceptionalEvent
      * @return
      */
-    public boolean hasMappedHandlerClassForExceptionalEvent(Object exceptionalEvent) {
-        return (exceptionalEvent == null) ? false : hasMappedHandlerClassForExceptionalEventType(exceptionalEvent.getClass());
-    }
-
-    /**
-     * Checks if there is any class, which does not necessarily have any instance registered as a handler,
-     * that has a mapped method to be invoked to process this type of exceptional event.
-     *
-     * @param exceptionalEventClass
-     * @return
-     */
-    public boolean hasMappedHandlerClassForExceptionalEventType(Class<?> exceptionalEventClass) {
+    public boolean hasLazyHandlingForExceptionalEvent(Object exceptionalEvent) {
+        Class<?> exceptionalEventClass = exceptionalEvent.getClass();
         if (exceptionalBus.isExceptionalEventInheritance()) {
             List<Class<?>> exceptionalEventTypes = ExceptionalBus.lookupAllExceptionalEventTypes(exceptionalEventClass);
             if (exceptionalEventTypes != null) {
                 int countTypes = exceptionalEventTypes.size();
                 for (int h = 0; h < countTypes; h++) {
                     Class<?> clazz = exceptionalEventTypes.get(h);
-                    if (hasMappedClassHandlingForExceptionalEventType(clazz)) {
+                    if (hasLazyHandlingForExceptionalEventType(clazz)) {
                         return true;
                     }
                 }
             }
             return false;
         }
-        return hasMappedClassHandlingForExceptionalEventType(exceptionalEventClass);
+        return hasLazyHandlingForExceptionalEventType(exceptionalEventClass);
     }
 
     /**
@@ -98,11 +88,11 @@ public class ExceptionalBusQuerier {
      * @param exceptionalEventClass
      * @return
      */
-    public boolean hasMappedClassHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<HandlerClass> mappedHandlerClasses;
+    public boolean hasLazyHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
+        CopyOnWriteArrayList<LazyHandling> mappedLazyHandlings;
         synchronized (this) {
-            mappedHandlerClasses = exceptionalBus.getMappedHandlerClassesByExceptionalEventType().get(exceptionalEventClass);
-            return mappedHandlerClasses != null && !mappedHandlerClasses.isEmpty();
+            mappedLazyHandlings = exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+            return mappedLazyHandlings != null && !mappedLazyHandlings.isEmpty();
         }
     }
 
@@ -210,17 +200,17 @@ public class ExceptionalBusQuerier {
      * @return
      */
     public boolean isMappedHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
-        CopyOnWriteArrayList<HandlerClass> handlerClasses;
+        CopyOnWriteArrayList<LazyHandling> lazyHandlings;
         synchronized (this) {
-            handlerClasses = exceptionalBus.getMappedHandlerClassesByExceptionalEventType().get(exceptionalEventClass);
-            if(handlerClasses != null && !handlerClasses.isEmpty()) {
-                for(HandlerClass handlerClass : handlerClasses) {
+            lazyHandlings = exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+            if(lazyHandlings != null && !lazyHandlings.isEmpty()) {
+                for(LazyHandling lazyHandling : lazyHandlings) {
                     if(exceptionalBus.isExceptionalEventInheritance()) {
-                        if(handlerClass.handlerClass.isAssignableFrom(handlerClassType))
+                        if(lazyHandling.handlerClass.isAssignableFrom(handlerClassType))
                             return true;
                     }
                     else {
-                        if(handlerClass.handlerClass.equals(handlerClassType))
+                        if(lazyHandling.handlerClass.equals(handlerClassType))
                             return true;
                     }
                 }
@@ -259,12 +249,12 @@ public class ExceptionalBusQuerier {
     }
 
     public boolean isExceptionalEventTypeMappedForExceptionalActionMode(Class<?> exceptionalEventClass, ExceptionalActionMode exceptionalActionMode) {
-        CopyOnWriteArrayList<HandlerClass> handlerClasses =
-                exceptionalBus.getMappedHandlerClassesByExceptionalEventType().get(exceptionalEventClass);
-        if (handlerClasses != null && !handlerClasses.isEmpty()) {
-            for (HandlerClass handlerClass : handlerClasses) {
-                if (ExceptionalActionMode.isTypeEnableFor(handlerClass.handlerClass, exceptionalActionMode)
-                        && handlerClass.handlerMethod.actionMode == exceptionalActionMode) {
+        CopyOnWriteArrayList<LazyHandling> lazyHandlings =
+                exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+        if (lazyHandlings != null && !lazyHandlings.isEmpty()) {
+            for (LazyHandling lazyHandling : lazyHandlings) {
+                if (ExceptionalActionMode.isTypeEnableFor(lazyHandling.handlerClass, exceptionalActionMode)
+                        && lazyHandling.handlerMethod.actionMode == exceptionalActionMode) {
                     return true;
                 }
             }
