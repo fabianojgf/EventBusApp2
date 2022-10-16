@@ -35,8 +35,8 @@ public abstract class AbstractBus {
         return eventbus.isMainThread();
     }
 
-    public boolean isStartMechanismEnabled() {
-        return eventbus.isStartMechanismEnabled();
+    public boolean isLazyMechanismEnabled() {
+        return eventbus.isLazyMechanismEnabled();
     }
 
     /**

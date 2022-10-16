@@ -21,10 +21,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
 public class ExceptionalBus extends AbstractBus {
+    /** Log tag, apps may override it. */
+    public static String TAG = "ExceptionalBus";
+
+    static volatile ExceptionalBus defaultInstance;
+
     private static final Map<Class<?>, List<Class<?>>> exceptionalEventTypesCache = new HashMap<>();
 
+    private Map<Class<?>, CopyOnWriteArrayList<LazyHandling>> mappedHandlingsByExceptionalEventType;
     private Map<Class<?>, CopyOnWriteArrayList<LazyHandling>> lazyHandlingsByExceptionalEventType;
-    private Map<Class<?>, CopyOnWriteArrayList<Handling>> handlingsByExceptionalEventType;
+    private Map<Class<?>, CopyOnWriteArrayList<Handling>> eagerHandlingsByExceptionalEventType;
+
     private Map<Object, List<Class<?>>> typesByHandler;
     private Map<Class<?>, Object> stickyExceptionalEvents;
 
@@ -73,13 +80,16 @@ public class ExceptionalBus extends AbstractBus {
     public ExceptionalBus(EventBus eventbus, ExceptionalBusBuilder builder) {
         super(eventbus);
 
+        mappedHandlingsByExceptionalEventType = new HashMap<>();
         lazyHandlingsByExceptionalEventType = new HashMap<>();
-        handlingsByExceptionalEventType = new HashMap<>();
+        eagerHandlingsByExceptionalEventType = new HashMap<>();
+
         typesByHandler = new HashMap<>();
         stickyExceptionalEvents = new ConcurrentHashMap<>();
 
         MainThreadSupport mainThreadSupport = builder.eventBusBuilder.getMainThreadSupport();
 
+        /** Throw/Handlers */
         mainThreadThrower = mainThreadSupport != null
                 ? mainThreadSupport.createThrower(getEventBus()) : null;
         backgroundThrower = new BackgroundThrower(getEventBus());
@@ -110,7 +120,7 @@ public class ExceptionalBus extends AbstractBus {
     }
 
     /**
-     * Registers the given handler to receive exceptional events. Handlers must call {@link #unregisterHandler(Object)} once they
+     * Registers the given handler to receive exceptional events. Handlers must call {@link #unregister(Object)} once they
      * are no longer interested in receiving exceptional events.
      * <p>
      * Handlers have exceptional event handling methods that must be annotated by {@link Handle}.
@@ -128,7 +138,7 @@ public class ExceptionalBus extends AbstractBus {
             }
         }
 
-        if(isStartMechanismEnabled() && querier.isHandlerMappedForExceptionalActionMode(
+        if(isLazyMechanismEnabled() && querier.isHandlerMappedForExceptionalActionMode(
                 handlerClass, ExceptionalActionMode.LAZY_HANDLE)) {
             //Processes the thread that sends the messages that are in the lazy queue.
             ThrowingThreadState lazyThrowingState = currentLazyThrowingThreadState.get();
@@ -148,10 +158,10 @@ public class ExceptionalBus extends AbstractBus {
     private void handle(Object handler, HandlerMethod handlerMethod) {
         Class<?> exceptionalEventType = handlerMethod.exceptionalEventType;
         Handling newHandling = new Handling(handler, handlerMethod);
-        CopyOnWriteArrayList<Handling> handlings = handlingsByExceptionalEventType.get(exceptionalEventType);
+        CopyOnWriteArrayList<Handling> handlings = eagerHandlingsByExceptionalEventType.get(exceptionalEventType);
         if (handlings == null) {
             handlings = new CopyOnWriteArrayList<>();
-            handlingsByExceptionalEventType.put(exceptionalEventType, handlings);
+            eagerHandlingsByExceptionalEventType.put(exceptionalEventType, handlings);
         } else {
             if (handlings.contains(newHandling)) {
                 throw new EventBusException("Handler " + handler.getClass() + " already registered to exceptional event "
@@ -196,8 +206,8 @@ public class ExceptionalBus extends AbstractBus {
     }
 
     /**
-     * Registers a class handling, which consists of an association between a class,
-     * which has handler methods mapped, and one of these handler methods.
+     * Registers a lazy handling, which consists of an association between a handler class and a handler method,
+     * which has handler methods mapped with actionMode LAZY_HANDLE, and one of these methods.
      *
      * Important: Must be called in synchronized block.
      *
@@ -205,14 +215,15 @@ public class ExceptionalBus extends AbstractBus {
      * @param handlerMethod
      */
     private void lazyHandle(Class<?> handlerClass, HandlerMethod handlerMethod) {
-        if(!ExceptionalActionMode.isTypeEnableFor(handlerClass, handlerMethod.actionMode)) {
-            throw new EventBusException("Type " + handlerClass
-                    + " is not an eligible type to use the actionMode "
-                    + handlerMethod.actionMode + " in one of its handler methods.");
+        if(handlerMethod.actionMode != ExceptionalActionMode.LAZY_HANDLE) {
+            throw new EventBusException("The method " + handlerClass
+                    + "::" + handlerMethod.methodString + " is not marked with actionMode LAZY_HANDLE.");
         }
 
         Class<?> exceptionalEventType = handlerMethod.exceptionalEventType;
         LazyHandling newLazyHandling = new LazyHandling(handlerClass, handlerMethod);
+
+        //Handlings mapped on source code and actionMode LAZY.
         CopyOnWriteArrayList<LazyHandling> lazyHandlings = lazyHandlingsByExceptionalEventType.get(exceptionalEventType);
         if (lazyHandlings == null) {
             lazyHandlings = new CopyOnWriteArrayList<>();
@@ -230,6 +241,50 @@ public class ExceptionalBus extends AbstractBus {
                 lazyHandlings.add(i, newLazyHandling);
                 break;
             }
+        }
+    }
+
+    /**
+     * Registers a mapped handling, which consists of an association between a handler class and a handler method,
+     * which has handler methods mapped, and one of these handler methods.
+     *
+     * Important: Must be called in synchronized block.
+     *
+     * @param handlerClass
+     * @param handlerMethod
+     */
+    private void mapHandle(Class<?> handlerClass, HandlerMethod handlerMethod) {
+        if(!ExceptionalActionMode.isTypeEnableFor(handlerClass, handlerMethod.actionMode)) {
+            throw new EventBusException("Type " + handlerClass
+                    + " is not an eligible type to use the actionMode "
+                    + handlerMethod.actionMode + " in one of its handler methods.");
+        }
+
+        Class<?> exceptionalEventType = handlerMethod.exceptionalEventType;
+        LazyHandling newMappedHandling = new LazyHandling(handlerClass, handlerMethod);
+
+        //Handlings just mapped on source code.
+        CopyOnWriteArrayList<LazyHandling> mappedHandlings = mappedHandlingsByExceptionalEventType.get(exceptionalEventType);
+        if (mappedHandlings == null) {
+            mappedHandlings = new CopyOnWriteArrayList<>();
+            mappedHandlingsByExceptionalEventType.put(exceptionalEventType, mappedHandlings);
+        } else {
+            if (mappedHandlings.contains(newMappedHandling)) {
+                throw new EventBusException("Handler " + handlerClass + " already registered as 'Mapped Handling' to exceptional event "
+                        + exceptionalEventType);
+            }
+        }
+
+        int size = mappedHandlings.size();
+        for (int i = 0; i <= size; i++) {
+            if (i == size || handlerMethod.priority > mappedHandlings.get(i).handlerMethod.priority) {
+                mappedHandlings.add(i, newMappedHandling);
+                break;
+            }
+        }
+
+        if(handlerMethod.actionMode == ExceptionalActionMode.LAZY_HANDLE) {
+            lazyHandle(handlerClass, handlerMethod);
         }
     }
 
@@ -265,7 +320,7 @@ public class ExceptionalBus extends AbstractBus {
      * @param exceptionalEventType
      */
     private void unhandleByExceptionalEventType(Object handler, Class<?> exceptionalEventType) {
-        List<Handling> handlings = handlingsByExceptionalEventType.get(exceptionalEventType);
+        List<Handling> handlings = eagerHandlingsByExceptionalEventType.get(exceptionalEventType);
         if (handlings != null) {
             int size = handlings.size();
             for (int i = 0; i < size; i++) {
@@ -285,7 +340,7 @@ public class ExceptionalBus extends AbstractBus {
      *
      * @param handler
      */
-    public synchronized void unregisterHandler(Object handler) {
+    public synchronized void unregister(Object handler) {
         List<Class<?>> handledTypes = typesByHandler.get(handler);
         if (handledTypes != null) {
             for (Class<?> exceptionalEventType : handledTypes) {
@@ -304,10 +359,10 @@ public class ExceptionalBus extends AbstractBus {
      */
     public void throwException(Object exceptionalEvent) {
         synchronized (exceptionalEvent) {
-            if(isStartMechanismEnabled()) {
+            if(isLazyMechanismEnabled()) {
                 //Register classes with methods mapped as subscribe or handle.
                 try {
-                    getEventBus().registerMappedClasses();
+                    eventbus.registerMappedClasses();
                 } catch (NoClassDefFoundError e) {
                     //At the moment, do nothing.
                 }
@@ -320,42 +375,46 @@ public class ExceptionalBus extends AbstractBus {
             //Processes the thread that sends the messages that are in the eager queue.
             processThrowingThread(eagerThrowingState);
 
-            if(isStartMechanismEnabled() && querier.isExceptionalEventMappedForExceptionalActionMode(
+            if(isLazyMechanismEnabled() && querier.isExceptionalEventMappedForExceptionalActionMode(
                     exceptionalEvent, ExceptionalActionMode.LAZY_HANDLE)) {
                 //Put exceptional events in lazy queue.
                 ThrowingThreadState lazyThrowingState = currentLazyThrowingThreadState.get();
                 putExceptionalEventInThrowingQueue(lazyThrowingState, exceptionalEvent);
 
                 //Prepare to start the activities that will receive the exceptional events of the lazy queue.
-                prepareLazyThrowingExceptionalEvent(exceptionalEvent);
+                //prepareLazyThrowingExceptionalEvent(exceptionalEvent);
             }
         }
     }
 
     public void putExceptionalEventInThrowingQueue(ThrowingThreadState throwingThreadState, Object exceptionalEvent) {
         if(throwingThreadState.isLazy) {
-            HashMap<Class<?>, ArrayList<Object>> lazyExceptionalEventHandlerQueue = throwingThreadState.exceptionalEventHandlerQueue;
-            Set<Class<?>> handlerClasses = getLazyHandlingClassForExceptionalEvent(exceptionalEvent);
+            HashMap<Class<?>, ArrayList<Object>> lazyHandlingExceptionalEventQueue = throwingThreadState.lazyExceptionalEventQueue;
+            Set<Class<?>> handlerClasses = getLazyHandlingClassesForExceptionalEvent(exceptionalEvent);
             Iterator<Class<?>> it = handlerClasses.iterator();
             while(it.hasNext()) {
                 Class<?> handlerClass = it.next();
 
-                if(querier.isRegisteredHandlerClassForExceptionalEvent(handlerClass, exceptionalEvent))
+                if(querier.isEagerHandlerClassForExceptionalEvent(handlerClass, exceptionalEvent)) {
+                    it.remove();
                     continue;
+                }
 
-                if(lazyExceptionalEventHandlerQueue.containsKey(handlerClass)) {
-                    ArrayList<Object> exceptionalEventList = lazyExceptionalEventHandlerQueue.get(handlerClass);
+                if(lazyHandlingExceptionalEventQueue.containsKey(handlerClass)) {
+                    ArrayList<Object> exceptionalEventList = lazyHandlingExceptionalEventQueue.get(handlerClass);
                     exceptionalEventList.add(exceptionalEvent);
                 }
                 else {
                     ArrayList<Object> exceptionalEventList = new ArrayList<Object>();
                     exceptionalEventList.add(exceptionalEvent);
-                    lazyExceptionalEventHandlerQueue.put(handlerClass, exceptionalEventList);
+                    lazyHandlingExceptionalEventQueue.put(handlerClass, exceptionalEventList);
                 }
             }
+
+            prepareLazyThrowingExceptionalEvent(exceptionalEvent, handlerClasses);
         }
         else {
-            List<Object> eagerExceptionalEventQueue = throwingThreadState.exceptionalEventQueue;
+            List<Object> eagerExceptionalEventQueue = throwingThreadState.eagerExceptionalEventQueue;
             eagerExceptionalEventQueue.add(exceptionalEvent);
         }
     }
@@ -372,7 +431,7 @@ public class ExceptionalBus extends AbstractBus {
             List<HandlerMethod> handlerMethods = handlerMethodFinder.findHandlerMethods(classToMap);
             synchronized (this) {
                 for (HandlerMethod handlerMethod : handlerMethods) {
-                    lazyHandle(classToMap, handlerMethod);
+                    mapHandle(classToMap, handlerMethod);
                 }
             }
         }
@@ -491,8 +550,8 @@ public class ExceptionalBus extends AbstractBus {
      * @param throwingState
      */
     private void processThrowingThread(Object handler, ThrowingThreadState throwingState) {
-        List<Object> exceptionalEventQueue = throwingState.exceptionalEventQueue;
-        HashMap<Class<?>, ArrayList<Object>> exceptionalEventHandlerQueue = throwingState.exceptionalEventHandlerQueue;
+        List<Object> exceptionalEventQueue = throwingState.eagerExceptionalEventQueue;
+        HashMap<Class<?>, ArrayList<Object>> lazyExceptionalEventQueue = throwingState.lazyExceptionalEventQueue;
 
         if (!throwingState.isThrowing) {
             throwingState.isMainThread = isMainThread();
@@ -502,7 +561,7 @@ public class ExceptionalBus extends AbstractBus {
             }
             try {
                 if (handler != null && throwingState.isLazy) {
-                    ArrayList<Object> exceptionalEventList = exceptionalEventHandlerQueue.get(handler.getClass());
+                    ArrayList<Object> exceptionalEventList = lazyExceptionalEventQueue.get(handler.getClass());
                     if(exceptionalEventList != null) {
                         while (!exceptionalEventList.isEmpty()) {
                             throwSingleExceptionalEvent(exceptionalEventList.remove(0), handler, throwingState);
@@ -571,8 +630,7 @@ public class ExceptionalBus extends AbstractBus {
      * @param exceptionalEventClass
      * @return
      */
-    private boolean throwsSingleExceptionalEventForExceptionalEventType(
-            Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
+    private boolean throwsSingleExceptionalEventForExceptionalEventType(Object exceptionalEvent, Object handler, ThrowingThreadState throwingState, Class<?> exceptionalEventClass) {
 
         CopyOnWriteArrayList<Handling> handlings = getHandlingsForThrowingExceptionalEvent(
                 exceptionalEvent,exceptionalEventClass);
@@ -612,7 +670,9 @@ public class ExceptionalBus extends AbstractBus {
             Object exceptionalEvent, Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlings = handlingsByExceptionalEventType.get(exceptionalEventClass);
+            handlings = eagerHandlingsByExceptionalEventType.get(exceptionalEventClass);
+            if(handlings == null)
+                return null;
 
             /* If the exceptional event is of the parameterized scope type,
               evaluate the handler selection based on the scope information. */
@@ -642,7 +702,7 @@ public class ExceptionalBus extends AbstractBus {
         return handlings;
     }
 
-    private Set<Class<?>> getLazyHandlingClassForExceptionalEvent(Object exceptionalEvent) {
+    private Set<Class<?>> getLazyHandlingClassesForExceptionalEvent(Object exceptionalEvent) {
         Set<Class<?>> handlerClassesSet = new HashSet<Class<?>>();
         Class<?> exceptionalEventClass = exceptionalEvent.getClass();
         if (exceptionalEventInheritance) {
@@ -650,16 +710,16 @@ public class ExceptionalBus extends AbstractBus {
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                handlerClassesSet.addAll(getLazyHandlingClassForExceptionalEventType(clazz));
+                handlerClassesSet.addAll(getLazyHandlingClassesForExceptionalEventType(clazz));
             }
         }
         else {
-            handlerClassesSet.addAll(getLazyHandlingClassForExceptionalEventType(exceptionalEventClass));
+            handlerClassesSet.addAll(getLazyHandlingClassesForExceptionalEventType(exceptionalEventClass));
         }
         return handlerClassesSet;
     }
 
-    private Set<Class<?>> getLazyHandlingClassForExceptionalEventType(Class<?> exceptionalEventClass) {
+    private Set<Class<?>> getLazyHandlingClassesForExceptionalEventType(Class<?> exceptionalEventClass) {
         Set<Class<?>> handlerClassesSet = new HashSet<Class<?>>();
         CopyOnWriteArrayList<LazyHandling> lazyHandlings;
         synchronized (this) {
@@ -711,6 +771,31 @@ public class ExceptionalBus extends AbstractBus {
                 break;
             default:
                 throw new IllegalStateException("Unknown thread mode: " + handling.handlerMethod.threadMode);
+        }
+    }
+
+    /**
+     * Prepares the exceptional event to be sent to the handlers who will receive it through the lazy send queue.
+     *
+     * @param exceptionalEvent
+     * @throws Error
+     */
+    private void prepareLazyThrowingExceptionalEvent(Object exceptionalEvent, Set<Class<?>> handlerClasses) throws Error {
+        for (Class<?> handlerClass : handlerClasses) {
+            if(ExceptionalActionMode.isTypeEnableFor(handlerClass, ExceptionalActionMode.LAZY_HANDLE)) {
+                if(Activity.class.isAssignableFrom(handlerClass)) {
+                    Intent intent = new Intent(getContext(), handlerClass);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(intent);
+                }
+                else if(Service.class.isAssignableFrom(handlerClass)) {
+                    Intent intent = new Intent(getContext(), handlerClass);
+                    getContext().startService(intent);
+                }
+            }
+            else {
+                throw new EventBusException("The type of this handler is not enabled for the 'start and handle' action mode.");
+            }
         }
     }
 
@@ -802,7 +887,7 @@ public class ExceptionalBus extends AbstractBus {
 
     /**
      * Invokes the handler if the handlings is still active. Skipping handlings prevents race conditions
-     * between {@link #unregisterHandler(Object)} and exceptional event delivery. Otherwise the exceptional event might be delivered after the
+     * between {@link #unregister(Object)} and exceptional event delivery. Otherwise the exceptional event might be delivered after the
      * handler unregistered. This is particularly important for main thread delivery and registrations bound to the
      * live cycle of an Activity or Fragment.
      *
@@ -870,8 +955,8 @@ public class ExceptionalBus extends AbstractBus {
      * For ThreadLocal, much faster to set (and get multiple values).
      */
     final static class ThrowingThreadState {
-        final List<Object> exceptionalEventQueue = new ArrayList<>();
-        final HashMap<Class<?>, ArrayList<Object>> exceptionalEventHandlerQueue = new HashMap<Class<?>, ArrayList<Object>>();
+        final List<Object> eagerExceptionalEventQueue = new ArrayList<>();
+        final HashMap<Class<?>, ArrayList<Object>> lazyExceptionalEventQueue = new HashMap<Class<?>, ArrayList<Object>>();
         boolean isThrowing;
         boolean isMainThread;
         boolean isLazy;
@@ -897,11 +982,11 @@ public class ExceptionalBus extends AbstractBus {
         return exceptionalEventInheritance;
     }
 
-    public Map<Class<?>, CopyOnWriteArrayList<Handling>> getHandlingsByExceptionalEventType() {
-        return handlingsByExceptionalEventType;
+    public Map<Class<?>, CopyOnWriteArrayList<Handling>> getEagerHandlingsByExceptionalEventType() {
+        return eagerHandlingsByExceptionalEventType;
     }
 
-    public Map<Class<?>, CopyOnWriteArrayList<LazyHandling>> getLazyHandlingClassesByExceptionalEventType() {
+    public Map<Class<?>, CopyOnWriteArrayList<LazyHandling>> getLazyHandlingsByExceptionalEventType() {
         return lazyHandlingsByExceptionalEventType;
     }
 

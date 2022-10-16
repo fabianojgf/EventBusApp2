@@ -52,7 +52,7 @@ public class ExceptionalBusQuerier {
     public boolean hasHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<Handling> handlings = null;
         synchronized (this) {
-            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            handlings = exceptionalBus.getEagerHandlingsByExceptionalEventType().get(exceptionalEventClass);
             return handlings != null && !handlings.isEmpty();
         }
     }
@@ -91,7 +91,7 @@ public class ExceptionalBusQuerier {
     public boolean hasLazyHandlingForExceptionalEventType(Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<LazyHandling> mappedLazyHandlings;
         synchronized (this) {
-            mappedLazyHandlings = exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+            mappedLazyHandlings = exceptionalBus.getLazyHandlingsByExceptionalEventType().get(exceptionalEventClass);
             return mappedLazyHandlings != null && !mappedLazyHandlings.isEmpty();
         }
     }
@@ -103,7 +103,7 @@ public class ExceptionalBusQuerier {
      * @param exceptionalEvent
      * @return
      */
-    public boolean isHandlerForExceptionalEvent(Object handler, Object exceptionalEvent) {
+    public boolean isEagerHandlerForExceptionalEvent(Object handler, Object exceptionalEvent) {
         Class<?> exceptionalEventClass = exceptionalEvent.getClass();
         Class<?> handlerClass = handler.getClass();
         if (exceptionalBus.isExceptionalEventInheritance()) {
@@ -111,12 +111,12 @@ public class ExceptionalBusQuerier {
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                if(isHandlerForExceptionalEventType(handler, clazz))
+                if(isEagerHandlerForExceptionalEventType(handler, clazz))
                     return true;
             }
             return false;
         }
-        return isHandlerForExceptionalEventType(handler, exceptionalEventClass);
+        return isEagerHandlerForExceptionalEventType(handler, exceptionalEventClass);
     }
 
     /**
@@ -126,10 +126,10 @@ public class ExceptionalBusQuerier {
      * @param exceptionalEventClass
      * @return
      */
-    public boolean isHandlerForExceptionalEventType(Object handler, Class<?> exceptionalEventClass) {
+    public boolean isEagerHandlerForExceptionalEventType(Object handler, Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            handlings = exceptionalBus.getEagerHandlingsByExceptionalEventType().get(exceptionalEventClass);
             if(handlings != null && !handlings.isEmpty()) {
                 for(Handling handling : handlings) {
                     if(handling.handler.equals(handler))
@@ -140,25 +140,25 @@ public class ExceptionalBusQuerier {
         }
     }
 
-    public boolean isRegisteredHandlerClassForExceptionalEvent(Class<?> handlerClass, Object exceptionalEvent) {
+    public boolean isEagerHandlerClassForExceptionalEvent(Class<?> handlerClass, Object exceptionalEvent) {
         Class<?> exceptionalEventClass = exceptionalEvent.getClass();
         if (exceptionalBus.isExceptionalEventInheritance()) {
             List<Class<?>> exceptionalEventTypes = ExceptionalBus.lookupAllExceptionalEventTypes(exceptionalEventClass);
             int countTypes = exceptionalEventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = exceptionalEventTypes.get(h);
-                if(isRegisteredHandlerClassForExceptionalEventType(handlerClass, clazz))
+                if(isEagerHandlerClassForExceptionalEventType(handlerClass, clazz))
                     return true;
             }
             return false;
         }
-        return isRegisteredHandlerClassForExceptionalEventType(handlerClass, exceptionalEventClass);
+        return isEagerHandlerClassForExceptionalEventType(handlerClass, exceptionalEventClass);
     }
 
-    public boolean isRegisteredHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
+    public boolean isEagerHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<Handling> handlings;
         synchronized (this) {
-            handlings = exceptionalBus.getHandlingsByExceptionalEventType().get(exceptionalEventClass);
+            handlings = exceptionalBus.getEagerHandlingsByExceptionalEventType().get(exceptionalEventClass);
             if(handlings != null && !handlings.isEmpty()) {
                 for(Handling handling : handlings) {
                     if(handling.handler.getClass().equals(handlerClassType))
@@ -202,7 +202,7 @@ public class ExceptionalBusQuerier {
     public boolean isMappedHandlerClassForExceptionalEventType(Class<?> handlerClassType, Class<?> exceptionalEventClass) {
         CopyOnWriteArrayList<LazyHandling> lazyHandlings;
         synchronized (this) {
-            lazyHandlings = exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+            lazyHandlings = exceptionalBus.getLazyHandlingsByExceptionalEventType().get(exceptionalEventClass);
             if(lazyHandlings != null && !lazyHandlings.isEmpty()) {
                 for(LazyHandling lazyHandling : lazyHandlings) {
                     if(exceptionalBus.isExceptionalEventInheritance()) {
@@ -250,7 +250,7 @@ public class ExceptionalBusQuerier {
 
     public boolean isExceptionalEventTypeMappedForExceptionalActionMode(Class<?> exceptionalEventClass, ExceptionalActionMode exceptionalActionMode) {
         CopyOnWriteArrayList<LazyHandling> lazyHandlings =
-                exceptionalBus.getLazyHandlingClassesByExceptionalEventType().get(exceptionalEventClass);
+                exceptionalBus.getLazyHandlingsByExceptionalEventType().get(exceptionalEventClass);
         if (lazyHandlings != null && !lazyHandlings.isEmpty()) {
             for (LazyHandling lazyHandling : lazyHandlings) {
                 if (ExceptionalActionMode.isTypeEnableFor(lazyHandling.handlerClass, exceptionalActionMode)

@@ -4,6 +4,10 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 
+import org.greenrobot.eventbus.parametric_scope.ExpectedScopeData;
+import org.greenrobot.eventbus.parametric_scope.NoExpectedScopeData;
+import org.greenrobot.eventbus.parametric_scope.ScopeExceptionEvent;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,8 +28,10 @@ public class RegularBus extends AbstractBus {
 
     private static final Map<Class<?>, List<Class<?>>> eventTypesCache = new HashMap<>();
 
-    private Map<Class<?>, CopyOnWriteArrayList<SubscriberClass>> mappedSubscriberClassesByEventType;
-    private Map<Class<?>, CopyOnWriteArrayList<Subscription>> subscriptionsByEventType;
+    private Map<Class<?>, CopyOnWriteArrayList<SubscriberClass>> mappedSubscriptionsByEventType;
+    private Map<Class<?>, CopyOnWriteArrayList<SubscriberClass>> lazySubscriptionsByEventType;
+    private Map<Class<?>, CopyOnWriteArrayList<Subscription>> eagerSubscriptionsByEventType;
+
     private Map<Object, List<Class<?>>> typesBySubscriber;
     private Map<Class<?>, Object> stickyEvents;
 
@@ -75,8 +81,10 @@ public class RegularBus extends AbstractBus {
     public RegularBus(EventBus eventbus, RegularBusBuilder builder) {
         super(eventbus);
 
-        mappedSubscriberClassesByEventType = new HashMap<>();
-        subscriptionsByEventType = new HashMap<>();
+        mappedSubscriptionsByEventType = new HashMap<>();
+        lazySubscriptionsByEventType = new HashMap<>();
+        eagerSubscriptionsByEventType = new HashMap<>();
+
         typesBySubscriber = new HashMap<>();
         stickyEvents = new ConcurrentHashMap<>();
 
@@ -131,11 +139,11 @@ public class RegularBus extends AbstractBus {
             }
         }
 
-        if(isStartMechanismEnabled() && querier.isSubscriberMappedForActionMode(
+        if(isLazyMechanismEnabled() && querier.isSubscriberMappedForActionMode(
                 subscriberClass, ActionMode.LAZY_SUBSCRIBE)) {
             //Processes the thread that sends the messages that are in the late queue.
-            PostingThreadState latePostingState = currentLatePostingThreadState.get();
-            processPostingThread(subscriber, latePostingState);
+            PostingThreadState lazyPostingState = currentLatePostingThreadState.get();
+            processPostingThread(subscriber, lazyPostingState);
         }
     }
 
@@ -151,10 +159,10 @@ public class RegularBus extends AbstractBus {
     private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
         Class<?> eventType = subscriberMethod.eventType;
         Subscription newSubscription = new Subscription(subscriber, subscriberMethod);
-        CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+        CopyOnWriteArrayList<Subscription> subscriptions = eagerSubscriptionsByEventType.get(eventType);
         if (subscriptions == null) {
             subscriptions = new CopyOnWriteArrayList<>();
-            subscriptionsByEventType.put(eventType, subscriptions);
+            eagerSubscriptionsByEventType.put(eventType, subscriptions);
         } else {
             if (subscriptions.contains(newSubscription)) {
                 throw new EventBusException("Subscriber " + subscriber.getClass() + " already registered to event "
@@ -199,30 +207,31 @@ public class RegularBus extends AbstractBus {
     }
 
     /**
-     * Registers a class subscription, which consists of an association between a class,
-     * which has subscriber methods mapped, and one of these subscriber methods.
+     * Registers a lazy subscription, which consists of an association between a subscriber class,
+     * which has subscriber methods mapped with actionMode LAZY_SUBSCRIBE, and one of these methods.
      *
      * Important: Must be called in synchronized block.
      *
-     * @param subscriberClassType
+     * @param subscriberClass
      * @param subscriberMethod
      */
-    private void subscribeClass(Class<?> subscriberClassType, SubscriberMethod subscriberMethod) {
-        if(!ActionMode.isTypeEnableFor(subscriberClassType, subscriberMethod.actionMode)) {
-            throw new EventBusException("Type " + subscriberClassType
-                    + " is not an eligible type to use the actionMode "
-                    + subscriberMethod.actionMode + " in one of its subscriber methods.");
+    private void lazySubscribe(Class<?> subscriberClass, SubscriberMethod subscriberMethod) {
+        if(subscriberMethod.actionMode != ActionMode.LAZY_SUBSCRIBE) {
+            throw new EventBusException("The method " + subscriberClass
+                    + "::" + subscriberMethod.methodString + " is not marked with actionMode LAZY_HANDLE.");
         }
 
         Class<?> eventType = subscriberMethod.eventType;
-        SubscriberClass newSubscriberClass = new SubscriberClass(subscriberClassType, subscriberMethod);
-        CopyOnWriteArrayList<SubscriberClass> subscriberClasses = mappedSubscriberClassesByEventType.get(eventType);
+        SubscriberClass newSubscriberClass = new SubscriberClass(subscriberClass, subscriberMethod);
+
+        //Subscriptions mapped on source code and actionMode LAZY.
+        CopyOnWriteArrayList<SubscriberClass> subscriberClasses = lazySubscriptionsByEventType.get(eventType);
         if (subscriberClasses == null) {
             subscriberClasses = new CopyOnWriteArrayList<>();
-            mappedSubscriberClassesByEventType.put(eventType, subscriberClasses);
+            lazySubscriptionsByEventType.put(eventType, subscriberClasses);
         } else {
             if (subscriberClasses.contains(newSubscriberClass)) {
-                throw new EventBusException("Subscriber " + subscriberClassType + " already registered as 'Subscriber Class' to event "
+                throw new EventBusException("Subscriber " + subscriberClass + " already registered as 'Subscriber Class' to event "
                         + eventType);
             }
         }
@@ -233,6 +242,50 @@ public class RegularBus extends AbstractBus {
                 subscriberClasses.add(i, newSubscriberClass);
                 break;
             }
+        }
+    }
+
+    /**
+     * Registers a mapped subscription, which consists of an association between a subscriber class,
+     * which has subscriber methods mapped, and one of these subscriber methods.
+     *
+     * Important: Must be called in synchronized block.
+     *
+     * @param subscriberClass
+     * @param subscriberMethod
+     */
+    private void mapSubscribe(Class<?> subscriberClass, SubscriberMethod subscriberMethod) {
+        if(!ActionMode.isTypeEnableFor(subscriberClass, subscriberMethod.actionMode)) {
+            throw new EventBusException("Type " + subscriberClass
+                    + " is not an eligible type to use the actionMode "
+                    + subscriberMethod.actionMode + " in one of its subscriber methods.");
+        }
+
+        Class<?> eventType = subscriberMethod.eventType;
+        SubscriberClass newMappedSubscription = new SubscriberClass(subscriberClass, subscriberMethod);
+
+        //Subscriptions just mapped on source code.
+        CopyOnWriteArrayList<SubscriberClass> subscriberClasses = mappedSubscriptionsByEventType.get(eventType);
+        if (subscriberClasses == null) {
+            subscriberClasses = new CopyOnWriteArrayList<>();
+            mappedSubscriptionsByEventType.put(eventType, subscriberClasses);
+        } else {
+            if (subscriberClasses.contains(newMappedSubscription)) {
+                throw new EventBusException("Subscriber " + subscriberClass + " already registered as 'Mapped Subscription' to event "
+                        + eventType);
+            }
+        }
+
+        int size = subscriberClasses.size();
+        for (int i = 0; i <= size; i++) {
+            if (i == size || subscriberMethod.priority > subscriberClasses.get(i).subscriberMethod.priority) {
+                subscriberClasses.add(i, newMappedSubscription);
+                break;
+            }
+        }
+
+        if(subscriberMethod.actionMode == ActionMode.LAZY_SUBSCRIBE) {
+            lazySubscribe(subscriberClass, subscriberMethod);
         }
     }
 
@@ -268,7 +321,7 @@ public class RegularBus extends AbstractBus {
      * @param eventType
      */
     private void unsubscribeByEventType(Object subscriber, Class<?> eventType) {
-        List<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+        List<Subscription> subscriptions = eagerSubscriptionsByEventType.get(eventType);
         if (subscriptions != null) {
             int size = subscriptions.size();
             for (int i = 0; i < size; i++) {
@@ -307,7 +360,7 @@ public class RegularBus extends AbstractBus {
      */
     public void post(Object event) {
         synchronized (event) {
-            if(isStartMechanismEnabled()) {
+            if(isLazyMechanismEnabled()) {
                 //Register classes with methods mapped as subscribe or handle.
                 try {
                     eventbus.registerMappedClasses();
@@ -323,14 +376,14 @@ public class RegularBus extends AbstractBus {
             //Processes the thread that sends the messages that are in the immediate queue.
             processPostingThread(immediatePostingState);
 
-            if(isStartMechanismEnabled() && querier.isEventMappedForActionMode(
+            if(isLazyMechanismEnabled() && querier.isEventMappedForActionMode(
                     event, ActionMode.LAZY_SUBSCRIBE)) {
                 //Put events in late queue.
                 PostingThreadState latePostingState = currentLatePostingThreadState.get();
                 putEventInPostingQueue(latePostingState, event);
 
                 //Prepare to start the activities that will receive the events of the late queue.
-                prepareLatePostingEvent(event);
+                //prepareLatePostingEvent(event);
             }
         }
     }
@@ -338,13 +391,15 @@ public class RegularBus extends AbstractBus {
     public void putEventInPostingQueue(PostingThreadState postingThreadState, Object event) {
         if(postingThreadState.isLate) {
             HashMap<Class<?>, ArrayList<Object>> lateEventSubscriberQueue = postingThreadState.eventSubscriberQueue;
-            Set<Class<?>> subscriberClasses = getMappedSubscriberClassForEvent(event);
+            Set<Class<?>> subscriberClasses = getLazySubscriptionClassesForPostingEvent(event);
             Iterator<Class<?>> it = subscriberClasses.iterator();
             while(it.hasNext()) {
                 Class<?> subscriberClass = it.next();
 
-                if(querier.isRegisteredSubscriberClassForEvent(subscriberClass, event))
+                if(querier.isEagerSubscriberClassForEvent(subscriberClass, event)) {
+                    it.remove();
                     continue;
+                }
 
                 if(lateEventSubscriberQueue.containsKey(subscriberClass)) {
                     ArrayList<Object> eventList = lateEventSubscriberQueue.get(subscriberClass);
@@ -356,6 +411,8 @@ public class RegularBus extends AbstractBus {
                     lateEventSubscriberQueue.put(subscriberClass, eventList);
                 }
             }
+
+            prepareLazyPostingEvent(event, subscriberClasses);
         }
         else {
             List<Object> immediateEventQueue = postingThreadState.eventQueue;
@@ -375,7 +432,7 @@ public class RegularBus extends AbstractBus {
             List<SubscriberMethod> subscriberMethods = subscriberMethodFinder.findSubscriberMethods(classToMap);
             synchronized (this) {
                 for (SubscriberMethod subscriberMethod : subscriberMethods) {
-                    subscribeClass(classToMap, subscriberMethod);
+                    mapSubscribe(classToMap, subscriberMethod);
                 }
             }
         }
@@ -575,10 +632,9 @@ public class RegularBus extends AbstractBus {
      * @return
      */
     private boolean postSingleEventForEventType(Object event, Object subscriber, PostingThreadState postingState, Class<?> eventClass) {
-        CopyOnWriteArrayList<Subscription> subscriptions;
-        synchronized (this) {
-            subscriptions = subscriptionsByEventType.get(eventClass);
-        }
+        CopyOnWriteArrayList<Subscription> subscriptions =
+                getSubscriptionsForPostingEvent(event, eventClass);
+
         if (subscriptions != null && !subscriptions.isEmpty()) {
             for (Subscription subscription : subscriptions) {
                 if(postingState.isLate && subscriber != null && !subscription.subscriber.equals(subscriber))
@@ -604,7 +660,22 @@ public class RegularBus extends AbstractBus {
         return false;
     }
 
-    private Set<Class<?>> getMappedSubscriberClassForEvent(Object event) {
+    /**
+     *
+     * @param event
+     * @param eventClass
+     * @return
+     */
+    private CopyOnWriteArrayList<Subscription> getSubscriptionsForPostingEvent(
+            Object event, Class<?> eventClass) {
+        CopyOnWriteArrayList<Subscription> subscriptions;
+        synchronized (this) {
+            subscriptions = eagerSubscriptionsByEventType.get(eventClass);
+        }
+        return subscriptions;
+    }
+
+    private Set<Class<?>> getLazySubscriptionClassesForPostingEvent(Object event) {
         Set<Class<?>> subscriberClassesSet = new HashSet<Class<?>>();
         Class<?> eventClass = event.getClass();
         if (eventInheritance) {
@@ -612,20 +683,20 @@ public class RegularBus extends AbstractBus {
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                subscriberClassesSet.addAll(getMappedSubscriberClassForEventType(clazz));
+                subscriberClassesSet.addAll(getLazySubscriptionClassesForEventType(clazz));
             }
         }
         else {
-            subscriberClassesSet.addAll(getMappedSubscriberClassForEventType(eventClass));
+            subscriberClassesSet.addAll(getLazySubscriptionClassesForEventType(eventClass));
         }
         return subscriberClassesSet;
     }
 
-    private Set<Class<?>> getMappedSubscriberClassForEventType(Class<?> eventClass) {
+    private Set<Class<?>> getLazySubscriptionClassesForEventType(Class<?> eventClass) {
         Set<Class<?>> subscriberClassesSet = new HashSet<Class<?>>();
         CopyOnWriteArrayList<SubscriberClass> subscriberClasses;
         synchronized (this) {
-            subscriberClasses = mappedSubscriberClassesByEventType.get(eventClass);
+            subscriberClasses = lazySubscriptionsByEventType.get(eventClass);
             if(subscriberClasses != null && !subscriberClasses.isEmpty()) {
                 for(SubscriberClass subscriberClass : subscriberClasses) {
                     subscriberClassesSet.add(subscriberClass.subscriberClass);
@@ -680,9 +751,35 @@ public class RegularBus extends AbstractBus {
      * Prepare the event to be sent to the subscribers who will receive it through the late send queue.
      *
      * @param event
+     * @param subscriberClasses
      * @throws Error
      */
-    private void prepareLatePostingEvent(Object event) throws Error {
+    private void prepareLazyPostingEvent(Object event, Set<Class<?>> subscriberClasses) throws Error {
+        for (Class<?> subscriberClass : subscriberClasses) {
+            if(ActionMode.isTypeEnableFor(subscriberClass, ActionMode.LAZY_SUBSCRIBE)) {
+                if(Activity.class.isAssignableFrom(subscriberClass)) {
+                    Intent intent = new Intent(getContext(), subscriberClass);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(intent);
+                }
+                else if(Service.class.isAssignableFrom(subscriberClass)) {
+                    Intent intent = new Intent(getContext(), subscriberClass);
+                    getContext().startService(intent);
+                }
+            }
+            else {
+                throw new EventBusException("The type of this subscriber is not enabled for the 'start and subscribe' action mode.");
+            }
+        }
+    }
+
+    /**
+     * Prepare the event to be sent to the subscribers who will receive it through the late send queue.
+     *
+     * @param event
+     * @throws Error
+     */
+    private void prepareLazyPostingEvent(Object event) throws Error {
         Class<?> eventClass = event.getClass();
         boolean subscriberClassFound = false;
         if (eventInheritance) {
@@ -690,10 +787,10 @@ public class RegularBus extends AbstractBus {
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                subscriberClassFound |= prepareLatePostingEventForEventType(event, clazz);
+                subscriberClassFound |= prepareLazyPostingEventForEventType(event, clazz);
             }
         } else {
-            subscriberClassFound = prepareLatePostingEventForEventType(event, eventClass);
+            subscriberClassFound = prepareLazyPostingEventForEventType(event, eventClass);
         }
     }
 
@@ -709,10 +806,10 @@ public class RegularBus extends AbstractBus {
      * @param eventClass
      * @return
      */
-    private boolean prepareLatePostingEventForEventType(Object event, Class<?> eventClass) {
+    private boolean prepareLazyPostingEventForEventType(Object event, Class<?> eventClass) {
         CopyOnWriteArrayList<SubscriberClass> subscriberClasses;
         synchronized (this) {
-            subscriberClasses = mappedSubscriberClassesByEventType.get(eventClass);
+            subscriberClasses = lazySubscriptionsByEventType.get(eventClass);
         }
         if (subscriberClasses != null && !subscriberClasses.isEmpty()) {
             for (SubscriberClass subscriberClass : subscriberClasses) {
@@ -859,12 +956,12 @@ public class RegularBus extends AbstractBus {
         return eventInheritance;
     }
 
-    public Map<Class<?>, CopyOnWriteArrayList<Subscription>> getSubscriptionsByEventType() {
-        return subscriptionsByEventType;
+    public Map<Class<?>, CopyOnWriteArrayList<Subscription>> getEagerSubscriptionsByEventType() {
+        return eagerSubscriptionsByEventType;
     }
 
-    public Map<Class<?>, CopyOnWriteArrayList<SubscriberClass>> getMappedSubscriberClassesByEventType() {
-        return mappedSubscriberClassesByEventType;
+    public Map<Class<?>, CopyOnWriteArrayList<SubscriberClass>> getLazySubscriptionsByEventType() {
+        return lazySubscriptionsByEventType;
     }
 
     public RegularBusQuerier getQuerier() {

@@ -52,7 +52,7 @@ public class RegularBusQuerier {
     public boolean hasSubscriptionForEventType(Class<?> eventClass) {
         CopyOnWriteArrayList<Subscription> subscriptions = null;
         synchronized (this) {
-            subscriptions = regularBus.getSubscriptionsByEventType().get(eventClass);
+            subscriptions = regularBus.getEagerSubscriptionsByEventType().get(eventClass);
             return subscriptions != null && !subscriptions.isEmpty();
         }
     }
@@ -101,7 +101,7 @@ public class RegularBusQuerier {
     public boolean hasMappedClassSubscriptionForEventType(Class<?> eventClass) {
         CopyOnWriteArrayList<SubscriberClass> mappedSubscriberClasses;
         synchronized (this) {
-            mappedSubscriberClasses = regularBus.getMappedSubscriberClassesByEventType().get(eventClass);
+            mappedSubscriberClasses = regularBus.getLazySubscriptionsByEventType().get(eventClass);
             return mappedSubscriberClasses != null && !mappedSubscriberClasses.isEmpty();
         }
     }
@@ -113,7 +113,7 @@ public class RegularBusQuerier {
      * @param event
      * @return
      */
-    public boolean isSubscriberForEvent(Object subscriber, Object event) {
+    public boolean isEagerSubscriberForEvent(Object subscriber, Object event) {
         Class<?> eventClass = event.getClass();
         Class<?> subscriberClass = subscriber.getClass();
         if (regularBus.isEventInheritance()) {
@@ -121,12 +121,12 @@ public class RegularBusQuerier {
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                if(isSubscriberForEventType(subscriber, clazz))
+                if(isEagerSubscriberForEventType(subscriber, clazz))
                     return true;
             }
             return false;
         }
-        return isSubscriberForEventType(subscriber, eventClass);
+        return isEagerSubscriberForEventType(subscriber, eventClass);
     }
 
     /**
@@ -136,10 +136,10 @@ public class RegularBusQuerier {
      * @param eventClass
      * @return
      */
-    public boolean isSubscriberForEventType(Object subscriber, Class<?> eventClass) {
+    public boolean isEagerSubscriberForEventType(Object subscriber, Class<?> eventClass) {
         CopyOnWriteArrayList<Subscription> subscriptions;
         synchronized (this) {
-            subscriptions = regularBus.getSubscriptionsByEventType().get(eventClass);
+            subscriptions = regularBus.getEagerSubscriptionsByEventType().get(eventClass);
             if(subscriptions != null && !subscriptions.isEmpty()) {
                 for(Subscription subscription : subscriptions) {
                     if(subscription.subscriber.equals(subscriber))
@@ -150,25 +150,25 @@ public class RegularBusQuerier {
         }
     }
 
-    public boolean isRegisteredSubscriberClassForEvent(Class<?> subscriberClass, Object event) {
+    public boolean isEagerSubscriberClassForEvent(Class<?> subscriberClass, Object event) {
         Class<?> eventClass = event.getClass();
         if (regularBus.isEventInheritance()) {
             List<Class<?>> eventTypes = RegularBus.lookupAllEventTypes(eventClass);
             int countTypes = eventTypes.size();
             for (int h = 0; h < countTypes; h++) {
                 Class<?> clazz = eventTypes.get(h);
-                if(isRegisteredSubscriberClassForEventType(subscriberClass, clazz))
+                if(isEagerSubscriberClassForEventType(subscriberClass, clazz))
                     return true;
             }
             return false;
         }
-        return isRegisteredSubscriberClassForEventType(subscriberClass, eventClass);
+        return isEagerSubscriberClassForEventType(subscriberClass, eventClass);
     }
 
-    public boolean isRegisteredSubscriberClassForEventType(Class<?> subscriberClassType, Class<?> eventClass) {
+    public boolean isEagerSubscriberClassForEventType(Class<?> subscriberClassType, Class<?> eventClass) {
         CopyOnWriteArrayList<Subscription> subscriptions;
         synchronized (this) {
-            subscriptions = regularBus.getSubscriptionsByEventType().get(eventClass);
+            subscriptions = regularBus.getEagerSubscriptionsByEventType().get(eventClass);
             if(subscriptions != null && !subscriptions.isEmpty()) {
                 for(Subscription subscription : subscriptions) {
                     if(subscription.subscriber.getClass().equals(subscriberClassType))
@@ -212,7 +212,7 @@ public class RegularBusQuerier {
     public boolean isMappedSubscriberClassForEventType(Class<?> subscriberClassType, Class<?> eventClass) {
         CopyOnWriteArrayList<SubscriberClass> subscriberClasses;
         synchronized (this) {
-            subscriberClasses = regularBus.getMappedSubscriberClassesByEventType().get(eventClass);
+            subscriberClasses = regularBus.getLazySubscriptionsByEventType().get(eventClass);
             if(subscriberClasses != null && !subscriberClasses.isEmpty()) {
                 for(SubscriberClass subscriberClass : subscriberClasses) {
                     if(regularBus.isEventInheritance()) {
@@ -260,7 +260,7 @@ public class RegularBusQuerier {
 
     public boolean isEventTypeMappedForActionMode(Class<?> eventClass, ActionMode actionMode) {
         CopyOnWriteArrayList<SubscriberClass> subscriberClasses =
-                regularBus.getMappedSubscriberClassesByEventType().get(eventClass);
+                regularBus.getLazySubscriptionsByEventType().get(eventClass);
         if (subscriberClasses != null && !subscriberClasses.isEmpty()) {
             for (SubscriberClass subscriberClass : subscriberClasses) {
                 if (ActionMode.isTypeEnableFor(subscriberClass.subscriberClass, actionMode)

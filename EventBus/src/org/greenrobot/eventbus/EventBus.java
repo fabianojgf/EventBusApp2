@@ -53,7 +53,7 @@ public class EventBus {
     private final ExceptionalBus exceptionalBus;
 
     private boolean mappedClassesRegistrationPerformed;
-    private boolean startMechanismEnabled;
+    private boolean lazyMechanismEnabled;
     private Context context;
 
     /**
@@ -135,7 +135,7 @@ public class EventBus {
         indexCount = regularBus.getIndexCount() + exceptionalBus.getIndexCount();
 
         mappedClassesRegistrationPerformed = builder.mappedClassesRegistrationPerformed;
-        startMechanismEnabled = builder.startMechanismEnabled;
+        lazyMechanismEnabled = builder.startMechanismEnabled;
     }
 
     /**
@@ -245,7 +245,7 @@ public class EventBus {
      * @param handler
      */
     public synchronized void unregisterHandler(Object handler) {
-        exceptionalBus.unregisterHandler(handler);
+        exceptionalBus.unregister(handler);
     }
 
     /**
@@ -472,8 +472,8 @@ public class EventBus {
         return exceptionalBus;
     }
 
-    public boolean isStartMechanismEnabled() {
-        return startMechanismEnabled;
+    public boolean isLazyMechanismEnabled() {
+        return lazyMechanismEnabled;
     }
 
     @Override
