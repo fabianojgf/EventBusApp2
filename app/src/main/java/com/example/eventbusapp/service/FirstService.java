@@ -7,6 +7,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.example.eventbusapp.activity.FirstActivity;
+import com.example.eventbusapp.event.exceptional.ExceptionEventB;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.ExceptionalActionMode;
@@ -32,22 +33,22 @@ public class FirstService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         int value = super.onStartCommand(intent, flags, startId);
-        Log.println(Log.VERBOSE, "EventBusTest", "FirstService: registerHandler");
+        Log.println(Log.VERBOSE, "EventBusAppTest", "FirstService: registerHandler");
         EventBus.getDefault(this).registerHandler(this);
         return value;
     }
 
     @Override
     public void onDestroy() {
-        Log.println(Log.VERBOSE, "EventBusTest", "FirstService: unregisterHandler");
+        Log.println(Log.VERBOSE, "EventBusAppTest", "FirstService: unregisterHandler");
         EventBus.getDefault(this).unregisterHandler(this);
         super.onDestroy();
     }
 
     @Handle(threadMode = ExceptionalThreadMode.MAIN, actionMode = ExceptionalActionMode.LAZY_HANDLE)
-    public void onExceptionEvent(FirstActivity.ExceptionEvent2 exceptionEvent) {
+    public void onExceptionEvent(ExceptionEventB exceptionEvent) {
         /* Do something */
-        Log.println(Log.VERBOSE, "EventBusTest", "FirstActivity->FirstService: onExceptionEvent");
-        Toast.makeText(this, "[FA/FS] Ocorreu uma Exceção!", Toast.LENGTH_LONG).show();
+        Log.println(Log.VERBOSE, "EventBusAppTest", "FirstActivity->FirstService : onExceptionEvent ( ExceptionEventB )");
+        Toast.makeText(this, "[FirstActivity->FirstService] : ExceptionEventB", Toast.LENGTH_LONG).show();
     }
 }

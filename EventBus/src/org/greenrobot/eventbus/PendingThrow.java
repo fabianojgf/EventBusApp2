@@ -25,31 +25,31 @@ final class PendingThrow {
     private final static List<PendingThrow> pendingThrowPool = new ArrayList<PendingThrow>();
 
     Object exceptionalEvent;
-    Handlement handlement;
+    Handling handling;
     PendingThrow next;
 
-    private PendingThrow(Object exceptionalEvent, Handlement handlement) {
+    private PendingThrow(Object exceptionalEvent, Handling handling) {
         this.exceptionalEvent = exceptionalEvent;
-        this.handlement = handlement;
+        this.handling = handling;
     }
 
-    static PendingThrow obtainPendingThrow(Handlement handlement, Object exceptionalEvent) {
+    static PendingThrow obtainPendingThrow(Handling handling, Object exceptionalEvent) {
         synchronized (pendingThrowPool) {
             int size = pendingThrowPool.size();
             if (size > 0) {
                 PendingThrow pendingThrow = pendingThrowPool.remove(size - 1);
                 pendingThrow.exceptionalEvent = exceptionalEvent;
-                pendingThrow.handlement = handlement;
+                pendingThrow.handling = handling;
                 pendingThrow.next = null;
                 return pendingThrow;
             }
         }
-        return new PendingThrow(exceptionalEvent, handlement);
+        return new PendingThrow(exceptionalEvent, handling);
     }
 
     static void releasePendingThrow(PendingThrow pendingThrow) {
         pendingThrow.exceptionalEvent = null;
-        pendingThrow.handlement = null;
+        pendingThrow.handling = null;
         pendingThrow.next = null;
         synchronized (pendingThrowPool) {
             // Don't let the pool grow indefinitely

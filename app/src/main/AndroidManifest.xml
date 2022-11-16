@@ -14,6 +14,7 @@
             android:enabled="true"
             android:exported="true"></service>
 
+        <activity android:name=".activity.FourthActivity" />
         <activity android:name=".activity.ThirdActivity" />
         <activity android:name=".activity.SecondActivity" />
         <activity android:name=".activity.FirstActivity" />

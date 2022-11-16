@@ -37,8 +37,8 @@ public class HandlerThrower extends Handler implements Thrower {
         queue = new PendingThrowQueue();
     }
 
-    public void enqueue(Handlement handlement, Object exceptionalEvent) {
-        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, exceptionalEvent);
+    public void enqueue(Handling handling, Object exceptionalEvent) {
+        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handling, exceptionalEvent);
         synchronized (this) {
             queue.enqueue(pendingThrow);
             if (!handlerActive) {
@@ -67,7 +67,7 @@ public class HandlerThrower extends Handler implements Thrower {
                         }
                     }
                 }
-                eventBus.invokeHandler(pendingThrow);
+                eventBus.getExceptionalBus().invokeHandler(pendingThrow);
                 long timeInMethod = SystemClock.uptimeMillis() - started;
                 if (timeInMethod >= maxMillisInsideHandleMessage) {
                     if (!sendMessage(obtainMessage())) {

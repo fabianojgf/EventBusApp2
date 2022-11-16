@@ -14,13 +14,14 @@
         tools:layout_editor_absoluteY="1dp">
 
         <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/activityThirdTextViewTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ThirdActivity" />
+            android:text="@string/title_activity_third"
+            android:textSize="24sp" />
 
         <TextView
-            android:id="@+id/textViewResponse3"
+            android:id="@+id/activityThirdTextViewResponse"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

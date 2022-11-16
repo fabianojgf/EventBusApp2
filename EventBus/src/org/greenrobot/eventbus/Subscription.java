@@ -20,7 +20,7 @@ final class Subscription {
     final SubscriberMethod subscriberMethod;
     /**
      * Becomes false as soon as {@link EventBus#unregisterSubscriber(Object)} is called, which is checked by queued event delivery
-     * {@link EventBus#invokeSubscriber(PendingPost)} to prevent race conditions.
+     * {@link RegularBus#invokeSubscriber(PendingPost)} to prevent race conditions.
      */
     volatile boolean active;
 

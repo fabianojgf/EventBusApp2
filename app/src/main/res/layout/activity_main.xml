@@ -14,13 +14,14 @@
         tools:layout_editor_absoluteY="1dp">
 
         <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/activityMainTextViewTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="MainActivity" />
+            android:text="@string/title_activity_main"
+            android:textSize="24sp" />
 
         <Button
-            android:id="@+id/buttonIniciar"
+            android:id="@+id/activityMainButtonIniciar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Iniciar" />

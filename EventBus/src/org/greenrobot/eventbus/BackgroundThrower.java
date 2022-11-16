@@ -34,8 +34,8 @@ final class BackgroundThrower implements Runnable, Thrower {
         queue = new PendingThrowQueue();
     }
 
-    public void enqueue(Handlement handlement, Object exceptionalEvent) {
-        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handlement, exceptionalEvent);
+    public void enqueue(Handling handling, Object exceptionalEvent) {
+        PendingThrow pendingThrow = PendingThrow.obtainPendingThrow(handling, exceptionalEvent);
         synchronized (this) {
             queue.enqueue(pendingThrow);
             if (!executorRunning) {
@@ -61,7 +61,7 @@ final class BackgroundThrower implements Runnable, Thrower {
                             }
                         }
                     }
-                    eventBus.invokeHandler(pendingThrow);
+                    eventBus.getExceptionalBus().invokeHandler(pendingThrow);
                 }
             } catch (InterruptedException e) {
                 eventBus.getLogger().log(Level.WARNING, Thread.currentThread().getName() + " was interruppted", e);

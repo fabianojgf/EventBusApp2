@@ -12,50 +12,50 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/activityFirstTextViewTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Divisão"
+            android:text="@string/title_activity_first"
             android:textSize="24sp" />
 
-        <EditText
-            android:id="@+id/editTextDenominador"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="number" />
-
         <TextView
-            android:id="@+id/textView"
-            android:layout_width="match_parent"
-            android:layout_height="22dp"
-            android:text="Dividido por" />
-
-        <EditText
-            android:id="@+id/editTextNumerador"
+            android:id="@+id/activityFirstTextViewExceptionA"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="number" />
-
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Igual" />
-
-        <EditText
-            android:id="@+id/editTextResultado"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:editable="false"
-            android:ems="10"
-            android:inputType="numberDecimal" />
+            android:textSize="16sp"
+            android:text="Exception A: NullPointerException" />
 
         <Button
-            android:id="@+id/buttonDivide"
+            android:id="@+id/activityFirstButtonThrowExceptionA"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Dividir" />
+            android:text="Throw Exception" />
+
+        <TextView
+            android:id="@+id/activityFirstTextViewExceptionB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="Exception B: UnsupportedOperationException" />
+
+        <Button
+            android:id="@+id/activityFirstButtonThrowExceptionB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Throw Exception" />
+
+        <TextView
+            android:id="@+id/activityFirstTextViewExceptionC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="Exception C: ClassNotFoundException" />
+
+        <Button
+            android:id="@+id/activityFirstButtonThrowExceptionC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Throw Exception" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
